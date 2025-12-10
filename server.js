@@ -1,194 +1,183 @@
-const express = require('express');
-const mysql = require('mysql2');
-const path = require('path');
-const cors = require('cors');
-const multer = require('multer'); // Khai báo 1 lần duy nhất ở đây
+// ================== IMPORT ==================
+const express = require("express");
+const mysql = require("mysql2");
+const path = require("path");
+const cors = require("cors");
+const multer = require("multer");
+const fs = require("fs");
 
+// ================== APP ==================
 const app = express();
-app.get("/", (req, res) => {
-  res.send("✅ Quan an app is running!");
-});
-const port = 3000;
+const PORT = process.env.PORT || 3000;
 
-// --- CẤU HÌNH CHUNG ---
+// ================== MIDDLEWARE ==================
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
-// --- 1. CẤU HÌNH UPLOAD ẢNH (MULTER) ---
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'public/uploads/') // Ảnh sẽ lưu vào thư mục này
-    },
-    filename: function (req, file, cb) {
-        // Đặt tên file chống trùng: thời gian + đuôi file
-        cb(null, Date.now() + path.extname(file.originalname))
-    }
+// ================== ROUTE TEST (QUAN TRỌNG) ==================
+app.get("/", (req, res) => {
+  res.send("✅ Quan an app is running on Render!");
 });
-const upload = multer({ storage: storage });
 
-// --- 2. KẾT NỐI DATABASE ---
+app.get("/health", (req, res) => {
+  res.json({ status: "OK" });
+});
+
+// ================== TẠO THƯ MỤC UPLOAD (RENDER KHÔNG TỰ CÓ) ==================
+const uploadDir = path.join(__dirname, "public/uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// ================== MULTER UPLOAD ==================
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage });
+
+// ================== MYSQL (KHÔNG LÀM CHẾT APP) ==================
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'ban_quan_db'
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASS || "",
+  database: process.env.DB_NAME || "ban_quan_db"
 });
 
 db.connect(err => {
-    if (err) console.error('❌ Lỗi kết nối MySQL:', err);
-    else console.log('✅ Đã kết nối MySQL thành công!');
+  if (err) {
+    console.error("❌ MySQL chưa kết nối (Render không có localhost):", err.message);
+  } else {
+    console.log("✅ MySQL connected");
+  }
 });
 
-// =============================================
-// PHẦN API (CÁC CHỨC NĂNG)
-// =============================================
+// ================== API ==================
 
-// --- A. QUẢN LÝ MÓN ĂN ---
-
-// Lấy danh sách món
-app.get('/api/mon-an', (req, res) => {
-    db.query("SELECT * FROM san_pham ORDER BY id DESC", (err, results) => {
-        if (err) return res.status(500).json(err);
-        res.json(results);
-    });
+// ----- MÓN ĂN -----
+app.get("/api/mon-an", (req, res) => {
+  db.query("SELECT * FROM san_pham ORDER BY id DESC", (err, rs) => {
+    if (err) return res.status(500).json(err);
+    res.json(rs);
+  });
 });
 
-// Thêm món mới (Có upload ảnh)
-app.post('/api/mon-an', upload.single('hinh_anh'), (req, res) => {
-    const { ten_mon, gia, mo_ta } = req.body;
-    const hinh_anh = req.file ? '/uploads/' + req.file.filename : ''; // Lấy đường dẫn ảnh
+app.post("/api/mon-an", upload.single("hinh_anh"), (req, res) => {
+  const { ten_mon, gia, mo_ta } = req.body;
+  const hinh_anh = req.file ? "/uploads/" + req.file.filename : "";
 
-    const sql = "INSERT INTO san_pham (ten_mon, gia, mo_ta, hinh_anh) VALUES (?, ?, ?, ?)";
-    db.query(sql, [ten_mon, gia, mo_ta, hinh_anh], (err, result) => {
-        if (err) return res.status(500).send('Lỗi thêm món');
-        res.send('Thêm thành công');
-    });
+  const sql =
+    "INSERT INTO san_pham (ten_mon, gia, mo_ta, hinh_anh) VALUES (?, ?, ?, ?)";
+  db.query(sql, [ten_mon, gia, mo_ta, hinh_anh], err => {
+    if (err) return res.status(500).send("Lỗi thêm món");
+    res.send("Thêm thành công");
+  });
 });
 
-// Sửa món ăn (Có upload ảnh)
-app.put('/api/mon-an/:id', upload.single('hinh_anh'), (req, res) => {
-    const { ten_mon, gia, mo_ta, hinh_anh_cu } = req.body;
-    const { id } = req.params;
-    
-    // Nếu có ảnh mới thì dùng ảnh mới, không thì dùng ảnh cũ
-    const hinh_anh = req.file ? '/uploads/' + req.file.filename : hinh_anh_cu;
+app.put("/api/mon-an/:id", upload.single("hinh_anh"), (req, res) => {
+  const { ten_mon, gia, mo_ta, hinh_anh_cu } = req.body;
+  const hinh_anh = req.file ? "/uploads/" + req.file.filename : hinh_anh_cu;
 
-    const sql = "UPDATE san_pham SET ten_mon=?, gia=?, mo_ta=?, hinh_anh=? WHERE id=?";
-    db.query(sql, [ten_mon, gia, mo_ta, hinh_anh, id], (err, result) => {
-        if (err) return res.status(500).send('Lỗi sửa món');
-        res.send('Sửa thành công');
-    });
+  const sql =
+    "UPDATE san_pham SET ten_mon=?, gia=?, mo_ta=?, hinh_anh=? WHERE id=?";
+  db.query(sql, [ten_mon, gia, mo_ta, hinh_anh, req.params.id], err => {
+    if (err) return res.status(500).send("Lỗi sửa món");
+    res.send("Sửa thành công");
+  });
 });
 
-// Xóa món ăn
-app.delete('/api/mon-an/:id', (req, res) => {
-    const { id } = req.params;
-    db.query("DELETE FROM san_pham WHERE id=?", [id], (err, result) => {
-        if (err) return res.status(500).send('Lỗi xóa món');
-        res.send('Xóa thành công');
-    });
+app.delete("/api/mon-an/:id", (req, res) => {
+  db.query("DELETE FROM san_pham WHERE id=?", [req.params.id], err => {
+    if (err) return res.status(500).send("Lỗi xóa");
+    res.send("Đã xóa");
+  });
 });
 
-// --- B. TÀI KHOẢN (USER) ---
+// ----- USER -----
+app.post("/api/register", (req, res) => {
+  const { fullname, username, password } = req.body;
 
-// Đăng ký
-app.post('/api/register', (req, res) => {
-    const { fullname, username, password } = req.body;
-    
-    db.query("SELECT * FROM users WHERE username = ?", [username], (err, results) => {
-        if (results.length > 0) return res.status(400).json({ error: "Tên đăng nhập đã tồn tại!" });
+  db.query(
+    "SELECT id FROM users WHERE username=?",
+    [username],
+    (err, rs) => {
+      if (rs && rs.length > 0)
+        return res.status(400).json({ error: "Username tồn tại" });
 
-        const sql = "INSERT INTO users (fullname, username, password) VALUES (?, ?, ?)";
-        db.query(sql, [fullname, username, password], (err, result) => {
-            if (err) return res.status(500).json({ error: "Lỗi đăng ký" });
-            res.json({ message: "Đăng ký thành công" });
-        });
-    });
-});
-
-// Đăng nhập
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    const sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-    db.query(sql, [username, password], (err, results) => {
-        if (err) return res.status(500).json({ error: "Lỗi Server" });
-
-        if (results.length > 0) {
-            const user = results[0];
-            const redirectUrl = user.role === 'admin' ? 'admin.html' : 'trang_chu.html';
-            
-            res.json({
-                success: true,
-                message: "Đăng nhập thành công!",
-                redirect: redirectUrl,
-                user: { 
-                    id: user.id, 
-                    fullname: user.fullname, 
-                    role: user.role, 
-                    username: user.username // Quan trọng để chia giỏ hàng
-                }
-            });
-        } else {
-            res.status(401).json({ success: false, message: "Sai tên đăng nhập hoặc mật khẩu!" });
+      db.query(
+        "INSERT INTO users (fullname, username, password) VALUES (?, ?, ?)",
+        [fullname, username, password],
+        err2 => {
+          if (err2) return res.status(500).json({ error: "Lỗi đăng ký" });
+          res.json({ message: "Đăng ký thành công" });
         }
-    });
+      );
+    }
+  );
 });
 
-// Lấy danh sách khách hàng
-app.get('/api/users', (req, res) => {
-    db.query("SELECT * FROM users ORDER BY id DESC", (err, results) => {
-        if (err) return res.status(500).json(err);
-        res.json(results);
-    });
-});
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body;
 
-// Xóa khách hàng
-app.delete('/api/users/:id', (req, res) => {
-    const id = req.params.id;
-    db.query("DELETE FROM users WHERE id = ?", [id], (err, result) => {
-        if (err) return res.status(500).send(err);
-        res.send("Đã xóa khách hàng");
-    });
-});
+  db.query(
+    "SELECT * FROM users WHERE username=? AND password=?",
+    [username, password],
+    (err, rs) => {
+      if (err) return res.status(500).json({ error: "Server lỗi" });
+      if (rs.length === 0)
+        return res.status(401).json({ message: "Sai tài khoản" });
 
-// --- C. ĐƠN HÀNG (ORDER) ---
-
-// Khách đặt hàng
-app.post('/api/dat-hang', (req, res) => {
-    const { khach_hang, so_dien_thoai, dia_chi, tong_tien, chi_tiet, hinh_thuc_thanh_toan } = req.body;
-    const chi_tiet_json = JSON.stringify(chi_tiet);
-
-    const sql = "INSERT INTO don_hang (khach_hang, so_dien_thoai, dia_chi, tong_tien, chi_tiet, hinh_thuc_thanh_toan) VALUES (?, ?, ?, ?, ?, ?)";
-    db.query(sql, [khach_hang, so_dien_thoai, dia_chi, tong_tien, chi_tiet_json, hinh_thuc_thanh_toan], (err, result) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send('Lỗi đặt hàng');
+      const user = rs[0];
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          fullname: user.fullname,
+          role: user.role,
+          username: user.username
         }
-        res.send('Đặt hàng thành công');
-    });
+      });
+    }
+  );
 });
 
-// Admin lấy danh sách đơn
-app.get('/api/don-hang', (req, res) => {
-    db.query("SELECT * FROM don_hang ORDER BY id DESC", (err, results) => {
-        if (err) return res.status(500).json(err);
-        res.json(results);
-    });
+// ----- ĐƠN HÀNG -----
+app.post("/api/dat-hang", (req, res) => {
+  const {
+    khach_hang,
+    so_dien_thoai,
+    dia_chi,
+    tong_tien,
+    chi_tiet,
+    hinh_thuc_thanh_toan
+  } = req.body;
+
+  const sql =
+    "INSERT INTO don_hang (khach_hang, so_dien_thoai, dia_chi, tong_tien, chi_tiet, hinh_thuc_thanh_toan) VALUES (?, ?, ?, ?, ?, ?)";
+  db.query(
+    sql,
+    [
+      khach_hang,
+      so_dien_thoai,
+      dia_chi,
+      tong_tien,
+      JSON.stringify(chi_tiet),
+      hinh_thuc_thanh_toan
+    ],
+    err => {
+      if (err) return res.status(500).send("Lỗi đặt hàng");
+      res.send("Đặt hàng thành công");
+    }
+  );
 });
 
-// Admin cập nhật trạng thái đơn
-app.post('/api/don-hang/update', (req, res) => {
-    const { id, trang_thai } = req.body;
-    const sql = "UPDATE don_hang SET trang_thai = ? WHERE id = ?";
-    db.query(sql, [trang_thai, id], (err, result) => {
-        if (err) return res.status(500).send('Lỗi cập nhật');
-        res.send('Cập nhật thành công');
-    });
-});
-
-// --- KHỞI ĐỘNG SERVER ---
-app.listen(port, () => {
-    console.log(`Server đang chạy tại http://localhost:${port}`);
+// ================== START SERVER ==================
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
