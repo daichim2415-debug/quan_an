@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký tài khoản - Food Shop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* === CSS GIAO DIỆN === */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .register-container {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 400px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 32px;
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        h2 { color: #333; margin-bottom: 20px; font-size: 22px; }
+
+        /* Input Styles */
+        .input-group {
+            margin-bottom: 15px;
+            position: relative;
+            text-align: left;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 5px;
+            display: block;
+            font-weight: 600;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 12px 15px 12px 40px; /* Chừa chỗ cho icon */
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .input-wrapper input:focus {
+            border-color: #ff6b6b;
+            box-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
+        }
+
+        /* Nút đăng ký */
+        .btn-register {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            background: #ff6b6b;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+
+        .btn-register:hover {
+            background: #ff4757;
+            transform: translateY(-2px);
+        }
+
+        /* Link chuyển trang */
+        .login-link {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .login-link a {
+            color: #ff6b6b;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .login-link a:hover { text-decoration: underline; }
+
+        /* Thông báo lỗi/thành công */
+        #message {
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+
+    <div class="register-container">
+        <a href="trang_chu.html" class="logo"><i class="fas fa-hamburger"></i> FoodShop</a>
+        <h2>Tạo tài khoản mới</h2>
+
+        <form id="registerForm">
+            <div class="input-group">
+                <label>Họ và tên</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="fullname" placeholder="Nhập họ tên của bạn" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Tên đăng nhập (Email)</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-envelope"></i>
+                    <input type="text" id="username" placeholder="Ví dụ: user123" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Mật khẩu</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Nhập mật khẩu" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Xác nhận mật khẩu</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="confirm_password" placeholder="Nhập lại mật khẩu" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-register">Đăng Ký Ngay</button>
+        </form>
+
+        <p id="message"></p>
+
+        <div class="login-link">
+            Đã có tài khoản? <a href="login.html">Đăng nhập tại đây</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); // Chặn load lại trang
+
+            // 1. Lấy dữ liệu từ form
+            const fullname = document.getElementById('fullname').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            const message = document.getElementById('message');
+
+            // 2. Kiểm tra mật khẩu khớp nhau (Frontend Validation)
+            if (password !== confirmPassword) {
+                message.style.display = 'block';
+                message.className = 'error';
+                message.innerText = '❌ Mật khẩu xác nhận không khớp!';
+                return;
+            }
+
+            // 3. Gửi dữ liệu xuống Server (Backend)
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullname, username, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    message.style.display = 'block';
+                    message.className = 'success';
+                    message.innerText = '✅ Đăng ký thành công! Đang chuyển hướng...';
+                    
+                    // Chuyển sang trang đăng nhập sau 2 giây
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || 'Đăng ký thất bại');
+                }
+            } catch (error) {
+                // Tạm thời báo lỗi này vì Server chưa code phần đăng ký
+                message.style.display = 'block';
+                message.className = 'error';
+                
+                // Nếu server chưa xử lý route này, nó sẽ báo 404
+                if(error.message.includes('404')) {
+                    message.innerText = '⚠️ Frontend đã xong! Cần cập nhật server.js để lưu user.';
+                } else {
+                    message.innerText = '❌ ' + error.message;
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

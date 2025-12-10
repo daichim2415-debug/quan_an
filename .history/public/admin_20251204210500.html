@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #f8f9fa; }
+        .sidebar { min-height: 100vh; background: #343a40; color: white; }
+        .sidebar a { color: #adb5bd; text-decoration: none; display: block; padding: 10px; }
+        .sidebar a:hover, .sidebar a.active { background: #495057; color: white; }
+        .status-cho { color: orange; font-weight: bold; }
+        .status-giao { color: blue; font-weight: bold; }
+        .status-xong { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="login-overlay" class="position-fixed top-0 start-0 w-100 h-100 bg-white d-flex justify-content-center align-items-center" style="z-index: 9999;">
+        <div class="card p-4 shadow" style="width: 350px;">
+            <h3 class="text-center mb-3">Đăng Nhập Admin</h3>
+            <input type="text" id="log-user" class="form-control mb-2" placeholder="Username (admin)">
+            <input type="password" id="log-pass" class="form-control mb-2" placeholder="Password (123)">
+            <button onclick="login()" class="btn btn-primary w-100">Vào Quản Trị</button>
+        </div>
+    </div>
+
+    <div class="d-flex">
+        <div class="sidebar p-3 flex-shrink-0" style="width: 250px;">
+            <h4 class="text-white text-center mb-4">QUẢN TRỊ VIÊN</h4>
+            <a href="#" onclick="showTab('mon')" class="active"><i class="fas fa-hamburger"></i> Quản Lý Món Ăn</a>
+            <a href="#" onclick="showTab('don')"><i class="fas fa-receipt"></i> Quản Lý Đơn Hàng</a>
+            <a href="/" target="_blank"><i class="fas fa-home"></i> Xem Trang Web</a>
+        </div>
+
+        <div class="p-4 w-100">
+            <div id="tab-mon">
+                <div class="d-flex justify-content-between mb-3">
+                    <h2>Danh Sách Món Ăn</h2>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">+ Thêm Món Mới</button>
+                </div>
+                <table class="table table-hover bg-white shadow-sm rounded">
+                    <thead class="table-dark"><tr><th>Hình</th><th>Tên Món</th><th>Giá</th><th>Hành Động</th></tr></thead>
+                    <tbody id="list-mon"></tbody>
+                </table>
+            </div>
+
+            <div id="tab-don" style="display:none;">
+                <h2>Danh Sách Đơn Hàng</h2>
+                <table class="table table-bordered bg-white shadow-sm">
+                    <thead class="table-primary">
+                        <tr><th>ID</th><th>Khách Hàng</th><th>Chi Tiết</th><th>Tổng Tiền</th><th>Trạng Thái</th><th>Xử Lý</th></tr>
+                    </thead>
+                    <tbody id="list-don"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5>Thêm Món Mới</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form id="form-them">
+                        <input type="text" id="ten" class="form-control mb-2" placeholder="Tên món" required>
+                        <input type="number" id="gia" class="form-control mb-2" placeholder="Giá tiền" required>
+                        <input type="file" id="hinh" class="form-control mb-2" required>
+                        <button class="btn btn-primary w-100">Lưu Món</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 1. Logic Đăng Nhập
+        function login() {
+            const u = document.getElementById('log-user').value;
+            const p = document.getElementById('log-pass').value;
+            fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u, password: p})
+            }).then(r => r.json()).then(d => {
+                if(d.success) { document.getElementById('login-overlay').remove(); loadAll(); }
+                else alert(d.message);
+            });
+        }
+
+        function loadAll(){ loadMon(); loadDon(); }
+        function showTab(tab) {
+            document.getElementById('tab-mon').style.display = tab === 'mon' ? 'block' : 'none';
+            document.getElementById('tab-don').style.display = tab === 'don' ? 'block' : 'none';
+        }
+
+        // 2. Load Món
+        async function loadMon() {
+            let res = await fetch('/api/products');
+            let data = await res.json();
+            let html = '';
+            data.forEach(m => {
+                html += `<tr>
+                    <td><img src="${m.hinh_anh}" width="50" class="rounded"></td>
+                    <td>${m.ten_mon}</td>
+                    <td>${Number(m.gia).toLocaleString()} đ</td>
+                    <td><button onclick="xoaMon(${m.id})" class="btn btn-danger btn-sm">Xóa</button></td>
+                </tr>`;
+            });
+            document.getElementById('list-mon').innerHTML = html;
+        }
+
+        // 3. Load Đơn Hàng
+        async function loadDon() {
+            let res = await fetch('/api/orders');
+            let data = await res.json();
+            let html = '';
+            data.forEach(d => {
+                let colorClass = d.status === 'Hoàn thành' ? 'status-xong' : 'status-cho';
+                html += `<tr>
+                    <td>#${d.id}</td>
+                    <td>${d.ten_khach}</td>
+                    <td>${d.noi_dung_don}</td>
+                    <td>${Number(d.tong_tien).toLocaleString()} đ</td>
+                    <td class="${colorClass}">${d.status}</td>
+                    <td>
+                        <select onchange="updateStatus(${d.id}, this.value)" class="form-select form-select-sm">
+                            <option value="">-- Chọn --</option>
+                            <option value="Đang giao">Đang giao</option>
+                            <option value="Hoàn thành">Hoàn thành</option>
+                            <option value="Đã hủy">Hủy đơn</option>
+                        </select>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('list-don').innerHTML = html;
+        }
+
+        // 4. Các chức năng khác
+        document.getElementById('form-them').onsubmit = async (e) => {
+            e.preventDefault();
+            let fd = new FormData();
+            fd.append('ten_mon', document.getElementById('ten').value);
+            fd.append('gia', document.getElementById('gia').value);
+            fd.append('hinh_anh', document.getElementById('hinh').files[0]);
+            await fetch('/api/products', {method:'POST', body:fd});
+            alert('Đã thêm món!'); location.reload();
+        }
+
+        async function xoaMon(id) {
+            if(confirm('Xóa món này?')) {
+                await fetch('/api/products/' + id, {method:'DELETE'});
+                loadMon();
+            }
+        }
+
+        async function updateStatus(id, st) {
+            if(!st) return;
+            await fetch('/api/orders/update', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({id, status: st})
+            });
+            loadDon();
+        }
+    </script>
+</body>
+</html>

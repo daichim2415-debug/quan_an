@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Giỏ Hàng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar"><div class="container"><a class="navbar-brand" href="/">← Quay lại chọn món</a></div></nav>
+
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-md-8">
+                <h4 class="mb-3">Giỏ hàng của bạn</h4>
+                <div class="card p-3 shadow-sm">
+                    <table class="table align-middle">
+                        <tbody id="cart-body"></tbody> </table>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm">
+                    <h4 class="mb-3">Thanh Toán</h4>
+                    <input id="c-name" class="form-control mb-2" placeholder="Tên người nhận">
+                    <input id="c-phone" class="form-control mb-2" placeholder="Số điện thoại">
+                    <textarea id="c-addr" class="form-control mb-3" placeholder="Địa chỉ giao hàng"></textarea>
+                    
+                    <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+                        <span>Tổng tiền:</span>
+                        <span class="text-danger" id="total-money">0 đ</span>
+                    </div>
+                    <button onclick="checkout()" class="btn btn-primary w-100 py-2">ĐẶT HÀNG NGAY</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCart();
+            // Tự điền tên user nếu đã login
+            const user = JSON.parse(localStorage.getItem('user'));
+            if(user) {
+                document.getElementById('c-name').value = user.name;
+                document.getElementById('c-phone').value = user.phone || '';
+            }
+        });
+
+        function renderCart() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const tbody = document.getElementById('cart-body');
+            tbody.innerHTML = '';
+            let total = 0;
+
+            if(cart.length === 0) tbody.innerHTML = '<p class="text-center p-3">Giỏ hàng trống trơn!</p>';
+
+            cart.forEach((item, index) => {
+                total += item.gia * item.sl;
+                tbody.innerHTML += `
+                    <tr>
+                        <td width="60"><img src="${item.hinh}" style="width:50px; height:50px; border-radius:5px;"></td>
+                        <td>
+                            <div class="fw-bold">${item.ten}</div>
+                            <small class="text-muted">${formatMoney(item.gia)}</small>
+                        </td>
+                        <td width="120">
+                            <div class="input-group input-group-sm">
+                                <button class="btn btn-outline-secondary" onclick="updateQty(${index}, -1)">-</button>
+                                <input type="text" class="form-control text-center" value="${item.sl}" readonly>
+                                <button class="btn btn-outline-secondary" onclick="updateQty(${index}, 1)">+</button>
+                            </div>
+                        </td>
+                        <td class="text-end fw-bold">${formatMoney(item.gia * item.sl)}</td>
+                        <td width="40"><button class="btn btn-sm text-danger" onclick="rem(${index})">X</button></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('total-money').innerText = formatMoney(total);
+        }
+
+        function updateQty(idx, delta) {
+            let cart = JSON.parse(localStorage.getItem('cart'));
+            cart[idx].sl += delta;
+            if(cart[idx].sl < 1) cart[idx].sl = 1;
+            localStorage.setItem('cart', JSON.stringify(cart));
+            renderCart();
+        }
+        function rem(idx) {
+            let cart = JSON.parse(localStorage.getItem('cart'));
+            cart.splice(idx, 1);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            renderCart();
+        }
+
+        async function checkout() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            
+            if(!user) return Swal.fire('Lỗi', 'Vui lòng đăng nhập để đặt hàng!', 'warning');
+            if(cart.length === 0) return Swal.fire('Lỗi', 'Giỏ hàng trống!', 'warning');
+            
+            const name = document.getElementById('c-name').value;
+            const phone = document.getElementById('c-phone').value;
+            const addr = document.getElementById('c-addr').value;
+
+            if(!name || !phone || !addr) return Swal.fire('Thiếu thông tin', 'Nhập đủ tên, sđt, địa chỉ', 'warning');
+
+            const res = await fetch('/api/orders', {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    user_id: user.id, customer_name: name, phone, address: addr,
+                    total_money: cart.reduce((s,i)=>s+i.gia*i.sl, 0), items: cart
+                })
+            });
+
+            if(res.ok) {
+                Swal.fire('Thành công', 'Đơn hàng đã được gửi!', 'success');
+                localStorage.removeItem('cart');
+                window.location.href = '/index.html';
+            }
+        }
+    </script>
+</body>
+</html>

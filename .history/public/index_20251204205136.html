@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Bán Ăn Nodejs</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Thực Đơn Quán (Node.js & MySQL)</h1>
+        <div id="menu-container" class="menu-grid">
+            </div>
+    </div>
+
+    <script>
+        // Khi trang web tải xong, gọi hàm lấy dữ liệu
+        document.addEventListener('DOMContentLoaded', loadProducts);
+
+        function loadProducts() {
+            // Gọi API từ Backend Node.js
+            fetch('http://localhost:3000/api/products')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('menu-container');
+                    container.innerHTML = ''; // Xóa nội dung cũ
+
+                    data.forEach(mon => {
+                        const html = `
+                            <div class="card">
+                                <img src="${mon.hinh_anh}" alt="${mon.ten_mon}">
+                                <h3>${mon.ten_mon}</h3>
+                                <p class="price">${mon.gia} VNĐ</p>
+                                <button onclick="addToCart(${mon.id}, '${mon.ten_mon}', ${mon.gia})">Thêm vào giỏ</button>
+                            </div>
+                        `;
+                        container.innerHTML += html;
+                    });
+                })
+                .catch(err => console.error('Lỗi:', err));
+        }
+
+        function addToCart(id, ten, gia) {
+            alert(`Đã thêm ${ten} vào giỏ! (Chức năng này cần code thêm logic lưu vào localStorage)`);
+        }
+    </script>
+</body>
+</html>

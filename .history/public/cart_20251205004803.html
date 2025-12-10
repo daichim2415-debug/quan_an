@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ hàng của bạn - FoodShop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* === CSS CƠ BẢN === */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #f5f5f5; color: #333; }
+
+        /* HEADER (Giống trang chủ) */
+        header {
+            background-color: white; padding: 15px 50px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { font-size: 24px; font-weight: 800; color: #ff6b6b; text-decoration: none; }
+        .back-btn { text-decoration: none; color: #333; font-weight: 600; }
+        .back-btn:hover { color: #ff6b6b; }
+
+        /* === LAYOUT GIỎ HÀNG === */
+        .cart-wrapper {
+            max-width: 1200px; margin: 30px auto; padding: 0 20px;
+            display: grid; grid-template-columns: 2fr 1fr; gap: 30px;
+        }
+
+        /* CỘT TRÁI: DANH SÁCH MÓN */
+        .cart-list { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .cart-header { font-size: 20px; font-weight: bold; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+
+        .cart-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 15px 0; border-bottom: 1px solid #f0f0f0;
+        }
+        .cart-item:last-child { border-bottom: none; }
+
+        .item-info { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
+        .item-img { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; }
+        .item-details h4 { font-size: 16px; margin-bottom: 5px; }
+        .item-details p { color: #ff6b6b; font-weight: bold; }
+
+        /* Nút tăng giảm số lượng */
+        .quantity-controls { display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 5px 10px; border-radius: 20px; }
+        .qty-btn { border: none; background: none; cursor: pointer; font-size: 14px; color: #555; width: 20px; }
+        .qty-value { font-weight: bold; font-size: 14px; width: 20px; text-align: center; }
+
+        .remove-btn { color: #999; cursor: pointer; margin-left: 20px; transition: 0.3s; }
+        .remove-btn:hover { color: red; }
+
+        /* CỘT PHẢI: TỔNG TIỀN */
+        .cart-summary {
+            background: white; border-radius: 10px; padding: 20px; height: fit-content;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); position: sticky; top: 100px;
+        }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 15px; }
+        .total-row { font-size: 18px; font-weight: bold; color: #ff6b6b; border-top: 1px solid #eee; padding-top: 15px; margin-top: 10px; }
+        
+        .checkout-btn {
+            width: 100%; background: #ff6b6b; color: white; padding: 15px;
+            border: none; border-radius: 8px; font-size: 16px; font-weight: bold;
+            cursor: pointer; margin-top: 20px; transition: 0.3s;
+        }
+        .checkout-btn:hover { background: #ff4757; }
+
+        /* TRẠNG THÁI TRỐNG */
+        .empty-cart { text-align: center; padding: 50px; display: none; }
+        .empty-cart i { font-size: 50px; color: #ddd; margin-bottom: 20px; }
+        .empty-cart a { color: #ff6b6b; font-weight: bold; text-decoration: none; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="trang_chu.html" class="logo"><i class="fas fa-hamburger"></i> FoodShop</a>
+        <a href="trang_chu.html" class="back-btn"><i class="fas fa-arrow-left"></i> Tiếp tục chọn món</a>
+    </header>
+
+    <div class="cart-wrapper">
+        <div class="cart-list" id="cart-container">
+            <h2 class="cart-header">Giỏ hàng (<span id="count-items">0</span> món)</h2>
+            <div id="cart-items-wrapper">
+                </div>
+            
+            <div class="empty-cart" id="empty-cart-msg">
+                <i class="fas fa-shopping-basket"></i>
+                <p>Giỏ hàng của bạn đang trống.</p>
+                <a href="trang_chu.html">Quay lại thực đơn</a>
+            </div>
+        </div>
+
+        <div class="cart-summary">
+            <h2 class="cart-header">Thanh toán</h2>
+            <div class="summary-row">
+                <span>Tạm tính:</span>
+                <span id="subtotal">0 đ</span>
+            </div>
+            <div class="summary-row">
+                <span>Phí vận chuyển:</span>
+                <span>15.000 đ</span>
+            </div>
+            <div class="summary-row total-row">
+                <span>Tổng cộng:</span>
+                <span id="total-price">0 đ</span>
+            </div>
+            <button class="checkout-btn" onclick="window.location.href='checkout.html'">
+    TIẾN HÀNH THANH TOÁN <i class="fas fa-arrow-right"></i>
+</button>
+        </div>
+    </div>
+
+    <script>
+        // Hàm định dạng tiền tệ
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        // Dữ liệu giả để test giao diện (Vì chưa kết nối localStorage từ trang chủ)
+        let cartData = [
+            { id: 1, name: "Phở Bò Tái", price: 45000, img: "https://via.placeholder.com/100", quantity: 2 },
+            { id: 2, name: "Bún Chả Hà Nội", price: 35000, img: "https://via.placeholder.com/100", quantity: 1 }
+        ];
+
+        // Lấy dữ liệu từ LocalStorage (Nếu có thật thì dùng, không thì dùng dữ liệu giả ở trên để test)
+        const storedCart = localStorage.getItem('shoppingCart');
+        if (storedCart) {
+            cartData = JSON.parse(storedCart);
+        } else {
+            // Lưu dữ liệu giả vào để lần sau load cho mượt
+            console.log("Đang dùng dữ liệu mẫu để hiển thị giao diện");
+        }
+
+        // HÀM VẼ GIỎ HÀNG
+        function renderCart() {
+            const wrapper = document.getElementById('cart-items-wrapper');
+            const emptyMsg = document.getElementById('empty-cart-msg');
+            const countSpan = document.getElementById('count-items');
+            
+            wrapper.innerHTML = '';
+            let subtotal = 0;
+            let totalItems = 0;
+
+            if (cartData.length === 0) {
+                wrapper.style.display = 'none';
+                emptyMsg.style.display = 'block';
+                document.getElementById('subtotal').innerText = '0 đ';
+                document.getElementById('total-price').innerText = '0 đ';
+                countSpan.innerText = 0;
+                return;
+            }
+
+            wrapper.style.display = 'block';
+            emptyMsg.style.display = 'none';
+
+            cartData.forEach((item, index) => {
+                subtotal += item.price * item.quantity;
+                totalItems += item.quantity;
+
+                const html = `
+                    <div class="cart-item">
+                        <div class="item-info">
+                            <img src="${item.img}" alt="${item.name}" class="item-img" onerror="this.src='https://via.placeholder.com/100'">
+                            <div class="item-details">
+                                <h4>${item.name}</h4>
+                                <p>${formatMoney(item.price)}</p>
+                            </div>
+                        </div>
+                        <div class="quantity-controls">
+                            <button class="qty-btn" onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>
+                            <span class="qty-value">${item.quantity}</span>
+                            <button class="qty-btn" onclick="updateQty(${index}, 1)"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div class="remove-btn" onclick="removeItem(${index})">
+                            <i class="fas fa-trash-alt"></i>
+                        </div>
+                    </div>
+                `;
+                wrapper.innerHTML += html;
+            });
+
+            // Cập nhật tổng tiền
+            document.getElementById('subtotal').innerText = formatMoney(subtotal);
+            document.getElementById('total-price').innerText = formatMoney(subtotal + 15000); // Cộng phí ship
+            countSpan.innerText = totalItems;
+        }
+
+        // HÀM CẬP NHẬT SỐ LƯỢNG
+        function updateQty(index, change) {
+            if (cartData[index].quantity + change > 0) {
+                cartData[index].quantity += change;
+            }
+            saveAndRender();
+        }
+
+        // HÀM XÓA MÓN
+        function removeItem(index) {
+            if (confirm('Bạn muốn xóa món này?')) {
+                cartData.splice(index, 1); // Xóa khỏi mảng
+                saveAndRender();
+            }
+        }
+
+        // LƯU VÀO LOCALSTORAGE VÀ VẼ LẠI
+        function saveAndRender() {
+            localStorage.setItem('shoppingCart', JSON.stringify(cartData));
+            renderCart();
+        }
+
+        // Chạy lần đầu
+        renderCart();
+    </script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Đơn hàng - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* === CSS CƠ BẢN === */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; background-color: #f1f2f6; height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 250px; background-color: #2f3542; color: white; display: flex; flex-direction: column; padding: 20px; }
+        .sidebar h2 { font-size: 24px; text-align: center; margin-bottom: 40px; color: #ff6b6b; border-bottom: 1px solid #57606f; padding-bottom: 20px; }
+        .menu-item { padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; color: #ced6e0; text-decoration: none; display: flex; align-items: center; gap: 15px; transition: 0.3s; }
+        .menu-item:hover, .menu-item.active { background-color: #ff6b6b; color: white; }
+
+        /* Main Content */
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+
+        /* Bảng đơn hàng */
+        .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
+        th { background-color: #f8f9fa; color: #555; }
+        
+        /* Dropdown trạng thái đẹp */
+        .status-select {
+            padding: 8px; border-radius: 20px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; outline: none;
+            text-align: center; width: 130px; appearance: none; /* Ẩn mũi tên mặc định */
+        }
+        /* Màu sắc cho từng trạng thái */
+        .status-new { background: #e1f5fe; color: #0288d1; }  /* Mới đặt (Xanh dương) */
+        .status-cooking { background: #fff3e0; color: #f57c00; } /* Đang làm (Cam) */
+        .status-shipping { background: #e3f2fd; color: #1976d2; } /* Đang giao (Xanh đậm) */
+        .status-done { background: #e8f5e9; color: #388e3c; } /* Hoàn thành (Xanh lá) */
+        .status-cancel { background: #ffebee; color: #d32f2f; } /* Hủy (Đỏ) */
+
+        .order-items { font-size: 13px; color: #666; max-width: 250px; }
+        .order-items span { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>FOOD ADMIN</h2>
+        <a href="admin.html" class="menu-item"><i class="fas fa-utensils"></i> Quản lý Món ăn</a>
+        <a href="orders.html" class="menu-item active"><i class="fas fa-file-invoice-dollar"></i> Đơn hàng</a>
+        <a href="customers.html" class="menu-item"><i class="fas fa-users"></i> Khách hàng</a>
+        <a href="trang_chu.html" class="menu-item" style="margin-top: auto; background: #ff4757;"><i class="fas fa-sign-out-alt"></i> Về trang khách</a>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2 style="color: #333;">Quản lý Đơn hàng</h2>
+            <button onclick="loadOrders()" style="padding:10px; background:#fff; border:1px solid #ddd; cursor:pointer;"><i class="fas fa-sync"></i> Tải lại</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Khách hàng</th>
+                        <th>Chi tiết đơn</th>
+                        <th>Tổng tiền</th>
+                        <th>Thanh toán</th>
+                        <th>Trạng thái (Click để đổi)</th>
+                        <th>Ngày đặt</th>
+                    </tr>
+                </thead>
+                <tbody id="order-list">
+                    <tr><td colspan="7" style="text-align:center">Đang tải dữ liệu...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleString('vi-VN');
+        }
+
+        // Hàm tô màu cho Dropdown
+        function getStatusClass(status) {
+            if(status === 'Mới đặt') return 'status-new';
+            if(status === 'Đang làm') return 'status-cooking';
+            if(status === 'Đang giao') return 'status-shipping';
+            if(status === 'Đã hoàn thành') return 'status-done';
+            return 'status-cancel'; // Đã hủy
+        }
+
+        async function loadOrders() {
+            try {
+                const response = await fetch('/api/don-hang');
+                const orders = await response.json();
+                
+                const tbody = document.getElementById('order-list');
+                tbody.innerHTML = '';
+
+                if(orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Chưa có đơn hàng nào!</td></tr>';
+                    return;
+                }
+
+                orders.forEach(order => {
+                    // Xử lý JSON món ăn
+                    let itemsHtml = '';
+                    try {
+                        const items = JSON.parse(order.chi_tiet);
+                        items.forEach(i => { itemsHtml += `<span>- ${i.quantity}x ${i.name}</span>`; });
+                    } catch (e) { itemsHtml = 'Lỗi dữ liệu món'; }
+
+                    // Tạo Dropdown chọn trạng thái
+                    const statusOptions = `
+                        <select onchange="updateStatus(${order.id}, this)" class="status-select ${getStatusClass(order.trang_thai)}">
+                            <option value="Mới đặt" ${order.trang_thai === 'Mới đặt' ? 'selected' : ''}>Mới đặt</option>
+                            <option value="Đang làm" ${order.trang_thai === 'Đang làm' ? 'selected' : ''}>⏳ Đang làm</option>
+                            <option value="Đang giao" ${order.trang_thai === 'Đang giao' ? 'selected' : ''}>🛵 Đang giao</option>
+                            <option value="Đã hoàn thành" ${order.trang_thai === 'Đã hoàn thành' ? 'selected' : ''}>✅ Đã xong</option>
+                            <option value="Đã hủy" ${order.trang_thai === 'Đã hủy' ? 'selected' : ''}>❌ Hủy đơn</option>
+                        </select>
+                    `;
+
+                    // Hiển thị hình thức thanh toán (nếu có cột này)
+                    const paymentMethod = order.hinh_thuc_thanh_toan || 'Tiền mặt';
+
+                    const row = `
+                        <tr>
+                            <td>#${order.id}</td>
+                            <td>
+                                <strong>${order.khach_hang}</strong><br>
+                                <span style="font-size:12px; color:#888">${order.so_dien_thoai}</span><br>
+                                <span style="font-size:11px; color:#aaa; font-style:italic">${order.dia_chi}</span>
+                            </td>
+                            <td class="order-items">${itemsHtml}</td>
+                            <td style="color:#d32f2f; font-weight:bold">${order.tong_tien}</td>
+                            <td style="font-size:13px;">${paymentMethod}</td>
+                            <td>${statusOptions}</td>
+                            <td style="font-size: 13px;">${formatDate(order.ngay_dat)}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // HÀM GỌI API CẬP NHẬT TRẠNG THÁI
+        async function updateStatus(orderId, selectElement) {
+            const newStatus = selectElement.value;
+            
+            // Cập nhật màu sắc ngay lập tức cho đẹp
+            selectElement.className = `status-select ${getStatusClass(newStatus)}`;
+
+            try {
+                const res = await fetch('/api/don-hang/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: orderId, trang_thai: newStatus })
+                });
+
+                if(res.ok) {
+                    // console.log("Đã cập nhật xong!"); 
+                    // Không cần alert làm phiền, chỉ cần đổi màu là Admin biết rồi
+                } else {
+                    alert('Lỗi cập nhật!');
+                }
+            } catch (error) {
+                alert('Mất kết nối server!');
+            }
+        }
+
+        loadOrders();
+    </script>
+</body>
+</html>

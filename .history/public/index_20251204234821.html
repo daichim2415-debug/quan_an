@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Ăn Ngon - Pro UI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* CSS GIAO DIỆN ĐẸP */
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+        body { font-family: 'Nunito', sans-serif; background: #f0f3f5; color: #2d3436; padding-bottom: 80px; }
+        
+        /* 1. Header */
+        .navbar { background: white; padding: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .logo { font-weight: 800; font-size: 1.5rem; color: #ff6b6b; text-decoration: none; }
+        
+        /* 2. Món ăn Card */
+        .food-card {
+            background: white; border-radius: 20px; overflow: hidden; border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s;
+            height: 100%; display: flex; flex-direction: column;
+        }
+        .food-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(255, 107, 107, 0.2); }
+        .food-img { width: 100%; height: 180px; object-fit: cover; }
+        .food-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .food-price { color: #ff6b6b; font-weight: 800; font-size: 1.1rem; }
+        .btn-add {
+            background: linear-gradient(45deg, #ff6b6b, #ff8787); border: none; color: white;
+            border-radius: 50px; padding: 8px; width: 100%; font-weight: 700; margin-top: 10px;
+        }
+        
+        /* 3. Bottom Menu (Giống App Mobile) */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: white;
+            display: flex; justify-content: space-around; padding: 12px 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1); z-index: 1000;
+        }
+        .nav-item { text-align: center; color: #b2bec3; cursor: pointer; transition: 0.3s; }
+        .nav-item.active { color: #ff6b6b; transform: scale(1.1); }
+        .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 2px; }
+        .nav-text { font-size: 0.75rem; font-weight: 700; }
+        .badge-count { position: absolute; top: 5px; right: 25%; background: red; color: white; font-size: 10px; padding: 2px 6px; border-radius: 50%; }
+
+        /* 4. Các màn hình (Views) */
+        .view-section { display: none; animation: fadeIn 0.4s; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 5. Giỏ hàng & Admin Style */
+        .cart-item { display: flex; align-items: center; background: white; padding: 10px; border-radius: 15px; margin-bottom: 10px; }
+        .cart-item img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; margin-right: 15px; }
+        .btn-pay { background: #2d3436; color: white; width: 100%; padding: 15px; border-radius: 15px; font-weight: bold; border:none; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="#" class="logo"><i class="fas fa-burger"></i> FOOD APP PRO</a>
+            <div id="header-title" class="fw-bold">Trang Chủ</div>
+        </div>
+    </nav>
+
+    <div id="view-home" class="view-section active container py-3">
+        <div class="p-4 mb-4 rounded-4 text-white text-center shadow" style="background: linear-gradient(135deg, #ff9f43, #ff6b6b);">
+            <h2 class="fw-bold">Hôm nay ăn gì?</h2>
+            <p>Freeship đơn từ 0đ cho khách hàng mới</p>
+        </div>
+        
+        <h5 class="fw-bold mb-3">🔥 Gợi ý cho bạn</h5>
+        <div class="row g-3" id="list-food">
+            <div class="text-center py-5"><i class="fas fa-spinner fa-spin"></i> Đang tải món...</div>
+        </div>
+    </div>
+
+    <div id="view-cart" class="view-section container py-3">
+        <h5 class="fw-bold mb-3">Đơn hàng của bạn</h5>
+        <div id="cart-list"></div>
+        
+        <div class="bg-white p-3 rounded-4 mt-3 shadow-sm">
+            <h6 class="fw-bold">Thông tin giao hàng</h6>
+            <input id="c-name" class="form-control mb-2" placeholder="Tên người nhận">
+            <input id="c-phone" class="form-control mb-2" placeholder="Số điện thoại">
+            <input id="c-addr" class="form-control mb-2" placeholder="Địa chỉ chi tiết">
+            <hr>
+            <div class="d-flex justify-content-between mb-3">
+                <span class="fw-bold">Tổng thanh toán</span>
+                <span class="fw-bold text-danger fs-5" id="total-pay">0 đ</span>
+            </div>
+            <button onclick="checkout()" class="btn-pay">ĐẶT HÀNG NGAY</button>
+        </div>
+    </div>
+
+    <div id="view-admin" class="view-section container py-3">
+        <div class="bg-white p-4 rounded-4 shadow-sm mb-4">
+            <h5 class="fw-bold text-center mb-3">Thêm Món Mới</h5>
+            <input id="p-name" class="form-control mb-2" placeholder="Tên món ăn">
+            <input id="p-price" type="number" class="form-control mb-2" placeholder="Giá tiền">
+            <input id="p-img" type="file" class="form-control mb-3">
+            <button onclick="addFood()" class="btn btn-success w-100 fw-bold">LƯU MÓN ĂN</button>
+        </div>
+        <button onclick="location.reload()" class="btn btn-outline-danger w-100">Đăng Xuất / Tải Lại</button>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchView('home', this)">
+            <i class="nav-icon fas fa-home"></i><span class="nav-text">Trang chủ</span>
+        </div>
+        <div class="nav-item position-relative" onclick="switchView('cart', this)">
+            <i class="nav-icon fas fa-shopping-bag"></i><span class="nav-text">Giỏ hàng</span>
+            <span id="badge" class="badge-count">0</span>
+        </div>
+        <div class="nav-item" onclick="switchView('admin', this)">
+            <i class="nav-icon fas fa-user-cog"></i><span class="nav-text">Quản trị</span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // --- 1. BIẾN TOÀN CỤC ---
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        
+        // --- 2. KHỞI CHẠY ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFood();
+            updateBadge();
+        });
+
+        // --- 3. CHUYỂN TAB ---
+        function switchView(viewName, element) {
+            // Ẩn tất cả view
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            // Hiện view được chọn
+            document.getElementById('view-' + viewName).classList.add('active');
+            
+            // Highlight icon
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            if(element) element.classList.add('active');
+
+            // Cập nhật tiêu đề
+            const titles = { 'home': 'Trang Chủ', 'cart': 'Thanh Toán', 'admin': 'Admin Zone' };
+            document.getElementById('header-title').innerText = titles[viewName];
+
+            if(viewName === 'cart') renderCart();
+        }
+
+        // --- 4. TẢI MÓN ĂN TỪ SERVER ---
+        async function loadFood() {
+            try {
+                const res = await fetch('/api/products');
+                const data = await res.json();
+                const div = document.getElementById('list-food');
+                div.innerHTML = '';
+                
+                data.forEach(p => {
+                    div.innerHTML += `
+                        <div class="col-6 col-md-3">
+                            <div class="food-card">
+                                <img src="${p.hinh_anh}" class="food-img">
+                                <div class="food-body">
+                                    <h6 class="fw-bold text-truncate">${p.ten_mon}</h6>
+                                    <div class="food-price">${Number(p.gia).toLocaleString()}đ</div>
+                                    <button onclick="addToCart(${p.id}, '${p.ten_mon}', ${p.gia}, '${p.hinh_anh}')" class="btn-add">
+                                        + Thêm
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        // --- 5. LOGIC GIỎ HÀNG ---
+        function addToCart(id, ten, gia, hinh) {
+            let item = cart.find(i => i.id === id);
+            if(item) item.sl++; else cart.push({id, ten, gia, hinh, sl:1});
+            saveCart();
+            
+            // Hiệu ứng Toast nhỏ
+            const Toast = Swal.mixin({toast: true, position: 'top-end', showConfirmButton: false, timer: 1000});
+            Toast.fire({icon: 'success', title: 'Đã thêm món!'});
+        }
+
+        function saveCart() {
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateBadge();
+        }
+
+        function updateBadge() {
+            document.getElementById('badge').innerText = cart.reduce((s,i)=>s+i.sl, 0);
+        }
+
+        function renderCart() {
+            const div = document.getElementById('cart-list');
+            div.innerHTML = '';
+            let total = 0;
+            
+            if(cart.length === 0) return div.innerHTML = '<div class="text-center text-muted py-5"><i class="fas fa-shopping-basket fa-3x mb-3"></i><p>Giỏ trống trơn!</p></div>';
+
+            cart.forEach((item, idx) => {
+                total += item.gia * item.sl;
+                div.innerHTML += `
+                    <div class="cart-item shadow-sm">
+                        <img src="${item.hinh}">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${item.ten}</div>
+                            <div class="text-danger small">${Number(item.gia).toLocaleString()}đ</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button onclick="updateQty(${idx}, -1)" class="btn btn-sm btn-light rounded-circle fw-bold" style="width:30px;height:30px;">-</button>
+                            <span>${item.sl}</span>
+                            <button onclick="updateQty(${idx}, 1)" class="btn btn-sm btn-light rounded-circle fw-bold" style="width:30px;height:30px;">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('total-pay').innerText = total.toLocaleString() + ' đ';
+        }
+
+        function updateQty(idx, delta) {
+            cart[idx].sl += delta;
+            if(cart[idx].sl < 1) cart.splice(idx, 1);
+            saveCart(); renderCart();
+        }
+
+        // --- 6. THANH TOÁN ---
+        async function checkout() {
+            if(cart.length === 0) return Swal.fire('Lỗi', 'Giỏ hàng trống!', 'error');
+            const name = document.getElementById('c-name').value;
+            const phone = document.getElementById('c-phone').value;
+            const addr = document.getElementById('c-addr').value;
+
+            if(!name || !phone) return Swal.fire('Thiếu thông tin', 'Nhập tên và số điện thoại', 'warning');
+
+            const res = await fetch('/api/orders', {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    ten_khach: name, phone, address: addr,
+                    total: cart.reduce((s,i)=>s+i.gia*i.sl, 0), items: cart
+                })
+            });
+
+            if(res.ok) {
+                Swal.fire('Thành công', 'Đơn hàng đã gửi!', 'success');
+                cart = []; saveCart(); renderCart(); switchView('home');
+            }
+        }
+
+        // --- 7. ADMIN: THÊM MÓN ---
+        async function addFood() {
+            const fd = new FormData();
+            fd.append('ten_mon', document.getElementById('p-name').value);
+            fd.append('gia', document.getElementById('p-price').value);
+            fd.append('hinh_anh', document.getElementById('p-img').files[0]);
+
+            const res = await fetch('/api/products', { method:'POST', body: fd });
+            if(res.ok) {
+                Swal.fire('OK', 'Đã thêm món mới', 'success');
+                loadFood(); // Tải lại danh sách
+                document.getElementById('p-name').value = ''; // Reset form
+            }
+        }
+    </script>
+</body>
+</html>

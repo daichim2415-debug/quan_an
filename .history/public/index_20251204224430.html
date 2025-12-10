@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang Chủ - Đặt Món</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">🍕 FOOD APP</a>
+            <div class="d-flex align-items-center gap-3">
+                <a href="/cart.html" class="position-relative text-dark fs-5 me-2">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+                </a>
+                <div id="nav-user"></div> </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="p-5 mb-4 bg-light rounded-3 text-center" style="background: url('https://source.unsplash.com/1200x400/?food') center/cover;">
+            <h1 class="display-5 fw-bold text-white text-shadow">Món Ngon Mỗi Ngày</h1>
+        </div>
+
+        <h3 class="mb-4 fw-bold border-start border-4 border-danger ps-3">Thực Đơn</h3>
+        <div class="row" id="list-mon">
+            </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLogin();
+            loadProducts();
+        });
+
+        async function loadProducts() {
+            const res = await fetch('/api/products');
+            const data = await res.json();
+            const div = document.getElementById('list-mon');
+            
+            data.forEach(p => {
+                div.innerHTML += `
+                    <div class="col-md-3 col-6">
+                        <div class="card-product h-100">
+                            <img src="${p.hinh_anh}" alt="${p.ten_mon}">
+                            <div class="card-body text-center">
+                                <h5 class="fw-bold">${p.ten_mon}</h5>
+                                <p class="price">${formatMoney(p.gia)}</p>
+                                <button onclick="addToCart(${p.id}, '${p.ten_mon}', ${p.gia}, '${p.hinh_anh}')" class="btn btn-primary w-100 rounded-pill">
+                                    Thêm Vào Giỏ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function addToCart(id, ten, gia, hinh) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            let item = cart.find(i => i.id === id);
+            if(item) item.sl++; else cart.push({id, ten, gia, hinh, sl:1});
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartBadge();
+            Swal.fire({icon:'success', title:'Đã thêm!', toast:true, position:'top-end', showConfirmButton:false, timer:1000});
+        }
+    </script>
+</body>
+</html>

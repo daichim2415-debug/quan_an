@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Shop - Đặt món nhanh</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* === RESET CSS === */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #f8f9fa; color: #333; }
+
+        /* === 1. HEADER (THANH MENU) === */
+        header {
+            background-color: #fff;
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        .logo {
+            font-size: 26px; font-weight: 800; color: #ff6b6b; 
+            text-decoration: none; display: flex; align-items: center; gap: 10px;
+        }
+
+        /* Thanh tìm kiếm */
+        .search-bar {
+            background: #f1f1f1; padding: 8px 15px; border-radius: 20px;
+            display: flex; align-items: center; width: 400px;
+        }
+        .search-bar input {
+            border: none; background: transparent; outline: none; 
+            width: 100%; margin-left: 10px; font-size: 14px;
+        }
+
+        .nav-icons { display: flex; align-items: center; gap: 20px; }
+        .nav-icons a { text-decoration: none; color: #333; font-weight: 600; font-size: 15px; transition: 0.3s; }
+        .nav-icons a:hover { color: #ff6b6b; }
+
+        /* Nút giỏ hàng nổi bật */
+        .cart-btn {
+            background: #ff6b6b; color: white !important;
+            padding: 8px 20px; border-radius: 30px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .cart-btn:hover { background: #ee5253; transform: translateY(-2px); }
+
+        /* === 2. BANNER QUẢNG CÁO === */
+        .banner {
+            height: 350px;
+            background: linear-gradient(to right, rgba(0,0,0,0.6), rgba(0,0,0,0.3)), 
+                        url('https://images.unsplash.com/photo-1543353071-873f17a7a088?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+            background-size: cover; background-position: center;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; color: white;
+        }
+        .banner h1 { font-size: 45px; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .banner p { font-size: 18px; opacity: 0.9; }
+
+        /* === 3. KHU VỰC MÓN ĂN === */
+        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+        
+        .section-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px;
+        }
+        .section-title { font-size: 24px; color: #2d3436; font-weight: 700; }
+
+        /* Lưới sản phẩm */
+        .product-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px;
+        }
+
+        /* Thẻ Card món ăn */
+        .food-card {
+            background: white; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s;
+            position: relative; border: 1px solid #eee;
+        }
+        .food-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+
+        .food-card img { width: 100%; height: 180px; object-fit: cover; }
+
+        .card-body { padding: 15px; }
+        .food-name { font-size: 18px; font-weight: 700; margin-bottom: 5px; color: #2d3436; }
+        .food-desc { font-size: 13px; color: #636e72; margin-bottom: 15px; height: 36px; overflow: hidden; }
+
+        .card-footer { display: flex; justify-content: space-between; align-items: center; }
+        .price { color: #ff6b6b; font-weight: 700; font-size: 18px; }
+
+        .add-btn {
+            background-color: #fff; border: 2px solid #ff6b6b; color: #ff6b6b;
+            padding: 5px 12px; border-radius: 20px; cursor: pointer; font-weight: 600;
+            transition: 0.3s;
+        }
+        .add-btn:hover { background-color: #ff6b6b; color: white; }
+
+        /* Footer */
+        footer { margin-top: 50px; background: #2d3436; color: white; padding: 30px; text-align: center; }
+        /* === SỬA CSS CHO KHUNG CHỨA MÓN ĂN === */
+#product-list {
+    display: grid;
+    /* Tự động chia cột: mỗi cột tối thiểu 280px, còn lại tự co giãn */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+    gap: 30px; /* Khoảng cách giữa các món */
+    padding: 20px 0;
+    max-width: 1200px; /* Giới hạn chiều rộng tối đa cho đẹp */
+    margin: 0 auto; /* Căn giữa màn hình */
+}
+
+/* === SỬA CSS CHO TỪNG THẺ MÓN ĂN === */
+.food-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* Đổ bóng nhẹ cho đẹp */
+    overflow: hidden;
+    transition: transform 0.3s;
+    display: flex;
+    flex-direction: column; /* Xếp nội dung dọc */
+    height: 100%; /* Để các thẻ cao bằng nhau */
+}
+
+.food-card:hover {
+    transform: translateY(-5px); /* Hiệu ứng bay lên khi di chuột */
+}
+
+/* Chỉnh ảnh món ăn cho đều nhau, không bị cái to cái bé */
+.food-card img {
+    width: 100%;
+    height: 200px; /* Cố định chiều cao ảnh */
+    object-fit: cover; /* Cắt ảnh cho vừa khung mà không bị méo */
+}
+
+.card-body {
+    padding: 15px;
+    flex: 1; /* Đẩy phần footer xuống đáy */
+    display: flex;
+    flex-direction: column;
+}
+
+.food-desc {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 15px;
+    flex: 1; /* Để mô tả dài ngắn khác nhau thì nút chọn vẫn thẳng hàng */
+}
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="#" class="logo"><i class="fas fa-utensils"></i> FoodShop</a>
+        
+        <div class="search-bar">
+            <i class="fas fa-search" style="color: #999;"></i>
+            <input type="text" placeholder="Bạn muốn ăn gì hôm nay?">
+        </div>
+
+       <nav class="nav-icons">
+    <a href="login.html" id="user-account">
+        <i class="far fa-user"></i> Đăng nhập
+    </a>
+
+    <a href="cart.html" class="cart-btn">
+        <i class="fas fa-shopping-cart"></i> 
+        <span>Giỏ hàng</span>
+        <span id="cart-count" style="background: white; color: #ff6b6b; border-radius: 50%; padding: 1px 6px; font-size: 12px;">0</span>
+    </a>
+</nav>
+    </header>
+
+    <div class="banner">
+        <div>
+            <h1>Thế Giới Ẩm Thực</h1>
+            <p>Freeship cho đơn hàng từ 100k - Giao siêu tốc</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Thực Đơn Hôm Nay</h2>
+        </div>
+
+        <div id="product-list" class="product-grid">
+            <div style="grid-column: 1/-1; text-align: center; padding: 20px;">
+                <i class="fas fa-spinner fa-spin fa-2x" style="color: #ff6b6b;"></i>
+                <p>Đang tải món ngon...</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 FoodShop Customer UI</p>
+    </footer>
+
+    <script>
+// 1. Hàm định dạng tiền tệ
+function formatMoney(amount) {
+ return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+ }
+
+// 2. Hàm tải danh sách món ăn từ Server
+ async function loadProducts() {
+        const list = document.getElementById('product-list');
+        try {
+            const response = await fetch('/api/mon-an');
+            if (!response.ok) throw new Error("Lỗi mạng");
+
+            const products = await response.json();
+            list.innerHTML = ''; 
+
+            if (products.length === 0) {
+                list.innerHTML = '<p style="text-align:center; width:100%">Chưa có món ăn nào.</p>';
+                return;
+            }
+
+            products.forEach(item => {
+                const imgUrl = item.hinh_anh ? item.hinh_anh : 'https://via.placeholder.com/300?text=No+Image';
+                
+                // Mã hóa dữ liệu món ăn để truyền vào nút bấm không bị lỗi
+                const productJson = JSON.stringify(item).replace(/"/g, "&quot;");
+
+                const html = `
+                    <div class="food-card">
+                        <img src="${imgUrl}" alt="${item.ten_mon}">
+                        <div class="card-body">
+                            <h3 class="food-name">${item.ten_mon}</h3>
+                            <p class="food-desc">${item.mo_ta || 'Hương vị tuyệt hảo.'}</p>
+                            <div class="card-footer">
+                                <span class="price">${formatMoney(item.gia)}</span>
+                                <button class="add-btn" onclick='addToCart(${productJson})'>
+                                    <i class="fas fa-plus"></i> Chọn
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.innerHTML += html;
+            });
+        } catch (error) {
+            list.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; color: red;">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Mất kết nối Server</h3>
+                    <p>Bạn hãy kiểm tra lại: đã chạy 'node server.js' chưa?</p>
+                </div>
+            `;
+        }
+    }
+function getCartKey() {
+ const userJson = localStorage.getItem('currentUser');
+ if (userJson) {
+ const user = JSON.parse(userJson);
+ return 'cart_' + user.username; // Ví dụ: cart_admin, cart_khach1
+ }
+ return 'shoppingCart'; // Giỏ hàng cho khách vãng lai
+ }
+ // 3. Hàm Thêm vào giỏ hàng (QUAN TRỌNG)
+function addToCart(product) {
+const key = getCartKey(); // Lấy đúng chìa khóa kho
+ let cart = JSON.parse(localStorage.getItem(key)) || [];
+
+let existingItem = cart.find(item => item.id === product.id);
+
+ if (existingItem) {
+ existingItem.quantity += 1;
+ } else {
+ cart.push({
+id: product.id,
+name: product.ten_mon,
+ price: product.gia,
+ img: product.hinh_anh,
+ quantity: 1
+});
+ }
+
+// Lưu vào đúng ngăn của người đó
+localStorage.setItem(key, JSON.stringify(cart));
+
+ updateCartCount();
+ alert(`Đã thêm "${product.ten_mon}" vào giỏ của bạn!`);
+}
+
+// --- 3. SỬA HÀM CẬP NHẬT SỐ LƯỢNG ---
+function updateCartCount() {
+ const key = getCartKey(); // Lấy đúng chìa khóa
+ let cart = JSON.parse(localStorage.getItem(key)) || [];
+
+let totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+ const countSpan = document.getElementById('cart-count');
+ if(countSpan) countSpan.innerText = totalCount;
+
+}
+// 4. Hàm kiểm tra trạng thái đăng nhập
+// 4. Hàm kiểm tra trạng thái đăng nhập (Phiên bản nâng cấp cho Admin)
+    function checkLoginStatus() {
+        const userJson = localStorage.getItem('currentUser');
+        const accountLink = document.getElementById('user-account');
+        const navIcons = document.querySelector('.nav-icons'); // Lấy thanh menu để chèn nút Admin
+
+        // Xóa nút admin cũ nếu có (để tránh bị trùng khi tải lại)
+        const oldAdminBtn = document.getElementById('admin-btn-link');
+        if(oldAdminBtn) oldAdminBtn.remove();
+
+        if (userJson) {
+            // --- TRƯỜNG HỢP ĐÃ ĐĂNG NHẬP ---
+            const user = JSON.parse(userJson);
+
+            // 1. Hiển thị tên người dùng
+            accountLink.innerHTML = `
+                <i class="fas fa-user-circle"></i> Chào, ${user.fullname} 
+                <span onclick="logout()" style="margin-left:10px; color: #ff6b6b; cursor:pointer; font-size:14px;">(Đăng xuất)</span>
+            `;
+            accountLink.removeAttribute('href');
+
+            // 2. NẾU LÀ ADMIN -> Thêm nút "Về trang Admin"
+            if (user.role === 'admin') {
+                const adminBtn = document.createElement('a');
+                adminBtn.id = 'admin-btn-link';
+                adminBtn.href = 'admin.html';
+                adminBtn.innerHTML = '<i class="fas fa-user-shield"></i> Quản lý';
+                
+                // Style cho nút Admin nổi bật
+                adminBtn.style.color = '#e84118';
+                adminBtn.style.fontWeight = 'bold';
+                adminBtn.style.marginRight = '15px';
+                adminBtn.style.border = '1px solid #e84118';
+                adminBtn.style.padding = '5px 10px';
+                adminBtn.style.borderRadius = '5px';
+
+                // Chèn nút Admin vào trước nút Tài khoản
+                navIcons.insertBefore(adminBtn, accountLink);
+            }
+
+        } else {
+            // --- TRƯỜNG HỢP CHƯA ĐĂNG NHẬP ---
+            accountLink.href = 'login.html';
+            accountLink.innerHTML = `<i class="far fa-user"></i> Đăng nhập`;
+        }
+    }
+// 5. Hàm Đăng xuất (Đã sửa theo ý bạn)
+function logout() {
+if(confirm('Bạn muốn đăng xuất?')) {
+ // Xóa thông tin đăng nhập
+ localStorage.removeItem('currentUser');
+ // Chuyển hướng về trang đăng nhập
+ window.location.href = 'login.html'; 
+}
+}
+
+// --- CHẠY CÁC HÀM KHI VÀO TRANG ---
+loadProducts();
+checkLoginStatus();
+updateCartCount();
+</script> 
+</body>
+</html>

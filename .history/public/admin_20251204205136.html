@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Thêm Món</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Thêm Món Ăn Mới</h2>
+        <form id="form-them-mon">
+            <input type="text" id="ten" placeholder="Tên món" required><br>
+            <input type="number" id="gia" placeholder="Giá" required><br>
+            <input type="text" id="mota" placeholder="Mô tả"><br>
+            <input type="file" id="hinh" required><br><br>
+            <button type="submit">Lưu Món</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('form-them-mon').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Chặn reload trang
+
+            // Lấy dữ liệu từ form
+            const formData = new FormData();
+            formData.append('ten_mon', document.getElementById('ten').value);
+            formData.append('gia', document.getElementById('gia').value);
+            formData.append('mo_ta', document.getElementById('mota').value);
+            formData.append('hinh_anh', document.getElementById('hinh').files[0]);
+
+            // Gửi dữ liệu sang Node.js
+            try {
+                const res = await fetch('http://localhost:3000/api/products', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+                alert(result.message);
+                // Reset form
+                e.target.reset();
+            } catch (err) {
+                alert('Có lỗi xảy ra!');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Giỏ Hàng - Food Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css"> </head>
+<body>
+
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/index.html"><i class="fas fa-utensils"></i> FOOD PRO</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link text-danger fw-bold" href="/index.html">← Tiếp tục mua món</a>
+                    </li>
+                    <li class="nav-item ms-3" id="user-area">
+                        </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <h2 class="fw-bold mb-4 text-center">Giỏ Hàng Của Bạn</h2>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Món ăn</th>
+                                        <th>Giá</th>
+                                        <th>Số lượng</th>
+                                        <th>Tổng</th>
+                                        <th>Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cart-body">
+                                    </tbody>
+                            </table>
+                        </div>
+                        <div id="empty-alert" class="text-center py-5" style="display:none;">
+                            <i class="fas fa-shopping-basket fa-3x text-muted mb-3"></i>
+                            <p>Giỏ hàng trống trơn. Đi chợ thôi!</p>
+                            <a href="/index.html" class="btn btn-danger rounded-pill">Quay lại thực đơn</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 bg-white">
+                    <div class="card-body">
+                        <h4 class="fw-bold mb-3">Thanh Toán</h4>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Người nhận</label>
+                            <input type="text" id="cus-name" class="form-control" placeholder="Tên của bạn">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Số điện thoại</label>
+                            <input type="text" id="cus-phone" class="form-control" placeholder="09xxxx">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Địa chỉ giao hàng</label>
+                            <textarea id="cus-addr" class="form-control" rows="3" placeholder="Số nhà, đường..."></textarea>
+                        </div>
+
+                        <hr>
+                        <div class="d-flex justify-content-between mb-4">
+                            <span class="fw-bold">Tổng tiền:</span>
+                            <span class="fw-bold text-danger fs-4" id="total-money">0 đ</span>
+                        </div>
+
+                        <button onclick="checkout()" class="btn btn-danger w-100 py-2 rounded-pill fw-bold">
+                            ĐẶT HÀNG NGAY
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="js/main.js"></script> 
+
+    <script>
+        // --- LOGIC RIÊNG CỦA TRANG GIỎ HÀNG ---
+
+        // 1. Khi trang tải xong -> Vẽ bảng
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLoginState(); // Hàm này nằm bên main.js
+            renderCartPage();  // Hàm vẽ bảng bên dưới
+            autoFillUser();    // Tự điền thông tin nếu đã đăng nhập
+        });
+
+        // 2. Hàm lấy dữ liệu từ LocalStorage vẽ ra HTML
+        function renderCartPage() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const tbody = document.getElementById('cart-body');
+            const emptyAlert = document.getElementById('empty-alert');
+            const totalSpan = document.getElementById('total-money');
+            
+            tbody.innerHTML = '';
+            let total = 0;
+
+            if (cart.length === 0) {
+                emptyAlert.style.display = 'block';
+                return;
+            } else {
+                emptyAlert.style.display = 'none';
+            }
+
+            cart.forEach((item, index) => {
+                let thanhTien = item.price * item.sl;
+                total += thanhTien;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="${item.img}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;" class="me-2">
+                                <span class="fw-bold">${item.name}</span>
+                            </div>
+                        </td>
+                        <td>${Number(item.price).toLocaleString()}</td>
+                        <td>
+                            <div class="input-group input-group-sm" style="width: 100px;">
+                                <button class="btn btn-outline-secondary" onclick="updateQty(${index}, -1)">-</button>
+                                <input type="text" class="form-control text-center" value="${item.sl}" readonly>
+                                <button class="btn btn-outline-secondary" onclick="updateQty(${index}, 1)">+</button>
+                            </div>
+                        </td>
+                        <td class="fw-bold text-danger">${thanhTien.toLocaleString()}</td>
+                        <td>
+                            <button class="btn btn-sm text-danger" onclick="removeItem(${index})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            totalSpan.innerText = total.toLocaleString() + ' đ';
+        }
+
+        // 3. Cập nhật số lượng (+ / -)
+        function updateQty(index, delta) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            cart[index].sl += delta;
+            
+            // Nếu giảm về 0 thì xóa luôn
+            if (cart[index].sl < 1) {
+                if(confirm('Xóa món này khỏi giỏ?')) cart.splice(index, 1);
+                else cart[index].sl = 1; // Hồi lại số 1 nếu không xóa
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            renderCartPage(); // Vẽ lại bảng
+            updateCartCount(); // Cập nhật cái số đỏ đỏ trên menu (hàm bên main.js)
+        }
+
+        // 4. Xóa hẳn món
+        function removeItem(index) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            Swal.fire({
+                title: 'Xóa món này?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Giữ lại'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    cart.splice(index, 1);
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    renderCartPage();
+                    updateCartCount();
+                }
+            });
+        }
+
+        // 5. Tự điền thông tin User (nếu đã đăng nhập)
+        function autoFillUser() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if(user) {
+                // Giả sử user object có field phone và address (nếu lúc đăng ký bạn lưu)
+                document.getElementById('cus-name').value = user.name || ''; 
+                document.getElementById('cus-phone').value = user.phone || '';
+                document.getElementById('cus-addr').value = user.address || '';
+            }
+        }
+
+        // 6. CHỨC NĂNG THANH TOÁN (Gửi về Server)
+        async function checkout() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const user = JSON.parse(localStorage.getItem('user'));
+
+            // Validation (Kiểm tra dữ liệu)
+            if (cart.length === 0) return Swal.fire('Lỗi', 'Giỏ hàng trống!', 'error');
+            if (!user) return Swal.fire('Yêu cầu', 'Bạn cần đăng nhập để đặt hàng!', 'warning');
+            
+            const name = document.getElementById('cus-name').value;
+            const phone = document.getElementById('cus-phone').value;
+            const addr = document.getElementById('cus-addr').value;
+
+            if (!name || !phone || !addr) return Swal.fire('Thiếu thông tin', 'Vui lòng nhập đủ địa chỉ nhận hàng', 'warning');
+
+            // Tính tổng tiền
+            const total = cart.reduce((sum, item) => sum + (item.price * item.sl), 0);
+
+            // Gửi API
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: user.id, // ID lấy từ lúc đăng nhập
+                        customer_name: name,
+                        phone: phone,
+                        address: addr,
+                        total_money: total,
+                        items: cart // Gửi nguyên mảng giỏ hàng về
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    Swal.fire('Thành công!', 'Đơn hàng đã được gửi đi.', 'success').then(() => {
+                        localStorage.removeItem('cart'); // Xóa giỏ sau khi mua
+                        window.location.href = '/index.html'; // Về trang chủ
+                    });
+                } else {
+                    Swal.fire('Lỗi', 'Không thể gửi đơn hàng.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Lỗi mạng', 'Không kết nối được server', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

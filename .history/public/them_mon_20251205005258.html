@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm món ăn mới - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* === CSS GIAO DIỆN ADMIN (Dùng chung) === */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; background-color: #f1f2f6; height: 100vh; }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 250px; background-color: #2f3542; color: white;
+            display: flex; flex-direction: column; padding: 20px;
+        }
+        .sidebar h2 { font-size: 24px; text-align: center; margin-bottom: 40px; color: #ff6b6b; font-weight: 800; border-bottom: 1px solid #57606f; padding-bottom: 20px; }
+        .menu-item { padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; color: #ced6e0; text-decoration: none; display: flex; align-items: center; gap: 15px; }
+        .menu-item:hover { background-color: #ff6b6b; color: white; }
+
+        /* MAIN CONTENT */
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; display: flex; justify-content: center; }
+
+        /* FORM THÊM MÓN */
+        .form-container {
+            background: white; padding: 30px; border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 600px;
+        }
+        .form-title { font-size: 24px; margin-bottom: 20px; color: #333; text-align: center; font-weight: bold; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        
+        .form-control {
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: 0.3s;
+        }
+        .form-control:focus { border-color: #ff6b6b; }
+        
+        /* Input chọn ảnh */
+        input[type="file"] { padding: 10px; background: #f9f9f9; }
+
+        /* Nút bấm */
+        .btn-submit {
+            width: 100%; padding: 12px; background: #2ed573; color: white;
+            border: none; border-radius: 6px; font-size: 16px; font-weight: bold;
+            cursor: pointer; margin-top: 10px;
+        }
+        .btn-submit:hover { background: #26af61; }
+        
+        .btn-back {
+            display: block; text-align: center; margin-top: 15px; text-decoration: none; color: #777;
+        }
+        .btn-back:hover { color: #333; }
+
+        /* Xem trước ảnh */
+        #preview-img { width: 100%; height: 200px; object-fit: cover; margin-top: 10px; display: none; border-radius: 6px; border: 1px dashed #ddd; }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>FOOD ADMIN</h2>
+        <a href="admin.html" class="menu-item"><i class="fas fa-arrow-left"></i> Quay lại danh sách</a>
+    </div>
+
+    <div class="main-content">
+        <div class="form-container">
+            <h2 class="form-title">Thêm Món Ăn Mới</h2>
+            
+            <form id="addProductForm">
+                <div class="form-group">
+                    <label>Tên món ăn</label>
+                    <input type="text" name="ten_mon" class="form-control" placeholder="Ví dụ: Bún đậu mắm tôm" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Giá tiền (VNĐ)</label>
+                    <input type="number" name="gia" class="form-control" placeholder="Ví dụ: 35000" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Mô tả ngắn</label>
+                    <textarea name="mo_ta" class="form-control" rows="3" placeholder="Nguyên liệu, hương vị..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Hình ảnh minh họa</label>
+                    <input type="file" name="hinh_anh" id="fileInput" class="form-control" accept="image/*" required>
+                    <img id="preview-img" src="#" alt="Preview">
+                </div>
+
+                <button type="submit" class="btn-submit"><i class="fas fa-save"></i> Lưu Món Ăn</button>
+                <a href="admin.html" class="btn-back">Hủy bỏ</a>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 1. Hiển thị ảnh xem trước khi chọn file
+        const fileInput = document.getElementById('fileInput');
+        const previewImg = document.getElementById('preview-img');
+
+        fileInput.onchange = evt => {
+            const [file] = fileInput.files;
+            if (file) {
+                previewImg.src = URL.createObjectURL(file);
+                previewImg.style.display = "block";
+            }
+        }
+
+        // 2. Xử lý gửi form lên server
+        const form = document.getElementById('addProductForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Tạo FormData để gửi cả file ảnh và text
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/api/them-mon', {
+                    method: 'POST',
+                    body: formData // Gửi nguyên bộ dữ liệu này đi
+                });
+
+                if (response.ok) {
+                    alert('✅ Thêm món ăn thành công!');
+                    window.location.href = 'admin.html'; // Quay về trang quản lý
+                } else {
+                    alert('❌ Lỗi khi thêm món!');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Lỗi kết nối server!');
+            }
+        });
+    </script>
+</body>
+</html>

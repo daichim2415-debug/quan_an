@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - FoodShop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* === CSS GIAO DIỆN (Đồng bộ với Register) === */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 380px; text-align: center;
+        }
+
+        .logo {
+            font-size: 28px; color: #ff6b6b; font-weight: bold;
+            margin-bottom: 5px; display: inline-block; text-decoration: none;
+        }
+
+        h2 { color: #333; margin-bottom: 25px; font-size: 22px; }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { font-size: 13px; color: #666; margin-bottom: 5px; display: block; font-weight: 600; }
+
+        .input-wrapper { position: relative; }
+        .input-wrapper i {
+            position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #aaa;
+        }
+        .input-wrapper input {
+            width: 100%; padding: 12px 15px 12px 40px;
+            border: 1px solid #ddd; border-radius: 25px; outline: none; transition: 0.3s;
+        }
+        .input-wrapper input:focus { border-color: #ff6b6b; box-shadow: 0 0 5px rgba(255, 107, 107, 0.3); }
+
+        .btn-login {
+            width: 100%; padding: 12px; border: none; border-radius: 25px;
+            background: #ff6b6b; color: white; font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        .btn-login:hover { background: #ff4757; transform: translateY(-2px); }
+
+        /* LINK ĐIỀU HƯỚNG */
+        .links { margin-top: 20px; font-size: 14px; display: flex; flex-direction: column; gap: 10px;}
+        .links a { color: #ff6b6b; text-decoration: none; font-weight: 500; }
+        .links a:hover { text-decoration: underline; }
+
+        .back-home { color: #666 !important; font-size: 13px; }
+
+        /* Thông báo lỗi */
+        #message { margin-top: 15px; font-size: 14px; display: none; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="logo"><i class="fas fa-hamburger"></i> FoodShop</div>
+        <h2>Đăng Nhập</h2>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <label>Tên đăng nhập</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Nhập tên đăng nhập" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Mật khẩu</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Nhập mật khẩu" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login">VÀO BẾP NGAY</button>
+        </form>
+
+        <p id="message"></p>
+
+        <div class="links">
+            <span>Chưa có tài khoản? <a href="register.html">Đăng ký ngay</a></span>
+            
+            <a href="trang_chu.html" class="back-home">← Về trang chủ</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const message = document.getElementById('message');
+
+            try {
+                // Tạm thời hiển thị thông báo vì chưa code backend
+                message.style.display = 'block';
+                message.className = 'error'; 
+                message.innerText = '⚠️ Đang chờ xử lý phía Server...';
+
+                // Sau này sẽ mở đoạn code dưới đây ra:
+                /*
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                if(response.ok) {
+                    window.location.href = 'trang_chu.html';
+                }
+                */
+
+            } catch (error) {
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>

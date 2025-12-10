@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang Chủ - Food Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css"> </head>
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/index.html"><i class="fas fa-utensils"></i> FOOD PRO</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="/cart.html">
+                            <i class="fas fa-shopping-bag fa-lg"></i>
+                            <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item ms-3" id="user-area"></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container">
+            <h1>Thèm Là Có - Ăn Là Ngon</h1>
+            <p class="lead">Hàng ngàn món ngon đang chờ bạn thưởng thức</p>
+            <div class="bg-white p-2 rounded-pill d-inline-flex shadow mt-3" style="width: 500px;">
+                <input type="text" class="form-control border-0" placeholder="Tìm kiếm món ăn..." id="search-box">
+                <button class="btn btn-danger rounded-pill px-4" onclick="loadProducts()">Tìm</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container pb-5">
+        <h3 class="fw-bold mb-4 text-center">🔥 Món Ngon Đề Xuất</h3>
+        <div class="row g-4" id="product-list">
+            </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Logic riêng của trang chủ
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLoginState();
+            loadProducts();
+        });
+
+        async function loadProducts() {
+            const key = document.getElementById('search-box').value;
+            const res = await fetch('/api/products');
+            const data = await res.json();
+            const list = document.getElementById('product-list');
+            list.innerHTML = '';
+            
+            // Lọc nếu có tìm kiếm
+            const filtered = key ? data.filter(p => p.ten_mon.toLowerCase().includes(key.toLowerCase())) : data;
+
+            filtered.forEach(p => {
+                list.innerHTML += `
+                    <div class="col-md-3 col-6">
+                        <div class="product-card h-100">
+                            <img src="${p.hinh_anh}" class="product-img">
+                            <div class="card-body text-center">
+                                <h5 class="card-title text-truncate">${p.ten_mon}</h5>
+                                <p class="price-tag">${Number(p.gia).toLocaleString()}đ</p>
+                                <button onclick="addToCart(${p.id}, '${p.ten_mon}', ${p.gia}, '${p.hinh_anh}')" class="btn-add">
+                                    <i class="fas fa-plus"></i> Thêm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>

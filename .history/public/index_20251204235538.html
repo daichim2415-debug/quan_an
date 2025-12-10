@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Food Pro — Trang Chủ</title>
+
+  <!-- Bootstrap + FontAwesome -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --primary: #ff4757;
+      --accent: #ff7a88;
+      --dark: #2b2f38;
+      --muted: #8a8f98;
+      --card-bg: #ffffff;
+      --glass: rgba(255,255,255,0.75);
+      --shadow: 0 8px 30px rgba(46,54,68,0.08);
+    }
+
+    *{box-sizing:border-box}
+    body{font-family:'Poppins',sans-serif;background:linear-gradient(180deg,#fff 0%,#f7f8fa 100%);color:var(--dark);min-height:100vh}
+
+    /* NAV */
+    .navbar{background:transparent;padding:1rem 0}
+    .brand {font-weight:800;color:var(--primary);letter-spacing:1px}
+    .search-box{min-width:260px;max-width:420px}
+    .badge-count{font-size:.65rem}
+
+    /* HERO */
+    .hero{
+      border-radius:18px;overflow:hidden;position:relative;padding:3.5rem 2rem;background-image:linear-gradient(135deg, rgba(255,71,87,0.07), rgba(255,107,129,0.04));
+      display:flex;gap:2rem;align-items:center;
+    }
+    .hero .cover{flex:1;min-height:180px;background-image:url('https://source.unsplash.com/1200x800/?food,meal');background-size:cover;background-position:center;border-radius:12px}
+    .hero .info{flex:1;color:var(--dark)}
+    .hero h1{font-size:2.25rem;margin-bottom:.5rem}
+    .hero p.lead{color:var(--muted);margin-bottom:1rem}
+
+    /* FILTERS */
+    .filters .btn{border-radius:999px}
+
+    /* CARD */
+    .card-product{border:none;border-radius:14px;background:var(--card-bg);box-shadow:var(--shadow);overflow:hidden;transition:transform .35s ease,box-shadow .35s ease}
+    .card-product:hover{transform:translateY(-8px);box-shadow:0 18px 45px rgba(46,54,68,0.12)}
+    .card-product .img-wrap{height:170px;overflow:hidden}
+    .card-product img{width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
+    .card-product:hover img{transform:scale(1.08)}
+    .card-body{padding:1rem;text-align:left}
+    .price{color:var(--primary);font-weight:700}
+    .desc{color:var(--muted);font-size:.9rem}
+
+    /* BUTTON ADD */
+    .btn-add{background:linear-gradient(90deg,var(--primary),var(--accent));border:none;color:#fff;border-radius:10px;padding:.5rem 1rem;font-weight:600}
+
+    /* FLYING IMAGE */
+    .flying-img{position:fixed;z-index:9999;border-radius:10px;width:56px;height:56px;object-fit:cover;pointer-events:none;transition:all .85s cubic-bezier(.23,1,.32,1);box-shadow:0 8px 30px rgba(0,0,0,.18)}
+
+    /* LOADING */
+    #loading-spinner{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(255,255,255,0.95),rgba(250,250,252,0.9));z-index:1050}
+    .spinner{width:56px;height:56px;border-radius:50%;border:6px solid #f1f1f1;border-top-color:var(--primary);animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* CART SHAKE */
+    @keyframes shake{0%{transform:rotate(0)}25%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}75%{transform:rotate(-8deg)}100%{transform:rotate(0)}}
+    .shake-cart{animation:shake .45s}
+
+    /* Reveal animation */
+    .reveal{opacity:0;transform:translateY(12px);transition:opacity .6s ease,transform .6s ease}
+    .reveal.visible{opacity:1;transform:none}
+
+    /* RESPONSIVE */
+    @media(max-width:767px){
+      .hero{flex-direction:column}
+      .hero .cover{width:100%;min-height:140px}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADING -->
+  <div id="loading-spinner" aria-hidden="false">
+    <div class="text-center">
+      <div class="spinner mb-3" role="status" aria-hidden="true"></div>
+      <div class="fw-semibold text-muted">Đang dọn món ngon... Xin đợi khoảnh khắc</div>
+    </div>
+  </div>
+
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+      <a class="navbar-brand brand d-flex align-items-center gap-2" href="/">
+        <i class="fas fa-utensils fa-lg"></i>
+        <span>FOOD PRO</span>
+      </a>
+
+      <div class="d-flex align-items-center ms-auto gap-3">
+        <div class="search-box d-none d-md-block">
+          <input id="search" class="form-control form-control-sm" placeholder="Tìm món, ví dụ: Phở, Bún...">
+        </div>
+
+        <div id="nav-user"></div>
+
+        <a href="/cart.html" class="position-relative text-dark fs-5" id="cart-icon-container" aria-label="Giỏ hàng">
+          <i class="fas fa-shopping-basket" id="cart-icon"></i>
+          <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger badge-count">0</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <section class="hero mb-4">
+      <div class="cover shadow-sm"></div>
+      <div class="info">
+        <h1 class="fw-bold">Món Ngon Mỗi Ngày</h1>
+        <p class="lead">Đặt ngay — Giao hỏa tốc trong 30 phút. Thanh toán linh hoạt, thực phẩm tươi ngon.</p>
+        <div class="d-flex gap-2 align-items-center">
+          <a href="#product-list" class="btn btn-outline-primary btn-sm">Xem Thực Đơn</a>
+          <button class="btn btn-sm btn-danger" id="btn-top-deals">Ưu đãi hôm nay</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="fw-bold mb-0">Thực Đơn Hôm Nay</h3>
+      <div class="filters d-flex gap-2">
+        <button class="btn btn-light btn-sm">Tất cả</button>
+        <button class="btn btn-light btn-sm">Món mặn</button>
+        <button class="btn btn-light btn-sm">Tráng miệng</button>
+      </div>
+    </div>
+
+    <div class="row g-4" id="product-list" aria-live="polite">
+      <!-- sản phẩm sẽ được inject ở đây -->
+    </div>
+
+    <div id="empty-placeholder" class="text-center text-muted mt-4" style="display:none">Chưa có món nào.</div>
+  </main>
+
+  <!-- SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    // DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      checkUserLogin();
+      loadProductsWithEffect();
+      updateCartCount();
+
+      // simple search filter
+      document.getElementById('search')?.addEventListener('input', (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        document.querySelectorAll('#product-list [data-name]').forEach(card => {
+          const name = card.getAttribute('data-name').toLowerCase();
+          card.style.display = (!q || name.includes(q)) ? '' : 'none';
+        });
+      });
+
+    });
+
+    // load products (better DOM ops + Intersection reveal)
+    async function loadProductsWithEffect(){
+      const listDiv = document.getElementById('product-list');
+      const loader = document.getElementById('loading-spinner');
+
+      // simulate slight loading to show spinner
+      setTimeout(async () => {
+        try{
+          const res = await fetch('/api/products');
+          const data = await res.json();
+          listDiv.innerHTML = '';
+
+          if(!data || data.length === 0){
+            document.getElementById('empty-placeholder').style.display = 'block';
+            loader.style.display = 'none';
+            return;
+          }
+
+          const frag = document.createDocumentFragment();
+
+          data.forEach((p, i) => {
+            const col = document.createElement('div');
+            col.className = 'col-lg-3 col-md-4 col-sm-6 reveal';
+            col.setAttribute('data-name', (p.ten_mon||'').toString());
+
+            col.innerHTML = `
+              <div class="card-product h-100">
+                <div class="img-wrap">
+                  <img src="${p.hinh_anh}" alt="${p.ten_mon}" id="img-${p.id}" loading="lazy">
+                </div>
+                <div class="card-body">
+                  <h5 class="mb-1 text-truncate">${p.ten_mon}</h5>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="price">${Number(p.gia).toLocaleString()} đ</div>
+                    <div class="text-muted" style="font-size:.85rem">Hot</div>
+                  </div>
+                  <p class="desc mb-2 text-truncate">${p.mo_ta || ''}</p>
+                  <div class="d-flex gap-2">
+                    <button class="btn-add btn btn-sm flex-grow-1" onclick="addToCart(this, ${p.id}, ${JSON.stringify(p.ten_mon)}, ${Number(p.gia)}, '${p.hinh_anh}')">Thêm <i class="fa-solid fa-plus ms-2"></i></button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="quickView(${p.id})"><i class="fa-regular fa-eye"></i></button>
+                  </div>
+                </div>
+              </div>`;
+
+            frag.appendChild(col);
+          });
+
+          listDiv.appendChild(frag);
+
+          // reveal with IntersectionObserver
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach((ent, idx) => {
+              if(ent.isIntersecting){
+                ent.target.classList.add('visible');
+                observer.unobserve(ent.target);
+              }
+            });
+          }, {threshold:0.12});
+
+          document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+          // hide loader
+          loader.style.opacity = '0';
+          setTimeout(()=> loader.style.display = 'none', 300);
+
+        }catch(err){
+          console.error(err);
+          loader.innerHTML = '<div class="text-danger">Lỗi kết nối Server!</div>';
+        }
+      }, 650);
+    }
+
+    // Add to cart with flying image effect
+    function addToCart(btn, id, ten, gia, hinh){
+      // update localStorage
+      let cart = JSON.parse(localStorage.getItem('cart')) || [];
+      let item = cart.find(i => i.id === id);
+      if(item) item.sl++; else cart.push({id, ten, gia, hinh, sl:1});
+      localStorage.setItem('cart', JSON.stringify(cart));
+
+      // visual
+      const cartIcon = document.getElementById('cart-icon-container');
+      const productImg = document.getElementById(`img-${id}`);
+
+      if(productImg && cartIcon){
+        const flyImg = productImg.cloneNode();
+        flyImg.className = 'flying-img';
+        document.body.appendChild(flyImg);
+
+        const start = productImg.getBoundingClientRect();
+        const end = cartIcon.getBoundingClientRect();
+
+        flyImg.style.top = start.top + 'px';
+        flyImg.style.left = start.left + 'px';
+        flyImg.style.width = start.width + 'px';
+        flyImg.style.height = start.height + 'px';
+
+        // force reflow then animate
+        requestAnimationFrame(()=>{
+          flyImg.style.top = (end.top + end.height/2 - 10) + 'px';
+          flyImg.style.left = (end.left + end.width/2 - 10) + 'px';
+          flyImg.style.width = '28px';
+          flyImg.style.height = '28px';
+          flyImg.style.opacity = '0.6';
+        });
+
+        setTimeout(()=>{
+          flyImg.remove();
+          updateCartCount();
+
+          const icon = document.getElementById('cart-icon');
+          icon.classList.add('shake-cart');
+          setTimeout(()=>icon.classList.remove('shake-cart'),450);
+
+          // toast
+          Swal.fire({toast:true,position:'top-end',showConfirmButton:false,timer:1500,title:`Đã thêm: ${ten}`,icon:'success'});
+        },850);
+      }else{
+        updateCartCount();
+        Swal.fire({toast:true,position:'top-end',showConfirmButton:false,timer:1000,title:`Đã thêm: ${ten}`,icon:'success'});
+      }
+    }
+
+    function updateCartCount(){
+      const cart = JSON.parse(localStorage.getItem('cart')) || [];
+      const badge = document.getElementById('cart-count');
+      if(badge){
+        badge.innerText = cart.reduce((s,i)=>s + (i.sl||0), 0);
+        badge.style.transform = 'scale(1.25)';
+        setTimeout(()=> badge.style.transform = 'scale(1)', 180);
+      }
+    }
+
+    function checkUserLogin(){
+      const user = JSON.parse(localStorage.getItem('user'));
+      const navUser = document.getElementById('nav-user');
+      if(user){
+        navUser.innerHTML = `
+          <div class="dropdown">
+            <button class="btn btn-outline-dark btn-sm dropdown-toggle rounded-pill" data-bs-toggle="dropdown">👤 ${user.name}</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="/profile.html">Lịch sử đơn hàng</a></li>
+              ${user.role === 'admin' ? '<li><a class="dropdown-item" href="/admin.html">Trang Admin</a></li>' : ''}
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Đăng xuất</a></li>
+            </ul>
+          </div>`;
+      }else{
+        navUser.innerHTML = `<a href="/login.html" class="btn btn-danger btn-sm rounded-pill">Đăng nhập</a>`;
+      }
+    }
+
+    function logout(){ localStorage.removeItem('user'); window.location.reload(); }
+
+    function quickView(id){
+      Swal.fire({title:'Xem nhanh',html:`<p>Chi tiết món: <strong>${id}</strong></p>`,showCloseButton:true});
+    }
+
+  </script>
+</body>
+</html>

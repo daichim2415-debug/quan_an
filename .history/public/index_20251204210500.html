@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bán Quán Ngon</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .hero { background: url('https://source.unsplash.com/1600x900/?food,restaurant') center/cover; height: 400px; display: flex; align-items: center; justify-content: center; color: white; text-shadow: 2px 2px 5px rgba(0,0,0,0.7); }
+        .card-img-top { height: 200px; object-fit: cover; }
+        .card:hover { transform: translateY(-5px); transition: 0.3s; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .floating-cart { position: fixed; bottom: 20px; right: 20px; background: #ff6b6b; color: white; padding: 15px 20px; border-radius: 50px; font-size: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 1000; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#"><i class="fas fa-utensils"></i> FOOD & DRINK</a>
+            <div class="ms-auto">
+                <a href="/admin.html" class="btn btn-outline-light btn-sm">Admin Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="text-center">
+            <h1 class="display-3 fw-bold">HƯƠNG VỊ TUYỆT HẢO</h1>
+            <p class="lead">Đặt món ngay - Giao hàng nóng hổi trong 30 phút</p>
+            <a href="#menu" class="btn btn-danger btn-lg rounded-pill px-5">XEM MENU NGAY</a>
+        </div>
+    </div>
+
+    <div class="container py-5" id="menu">
+        <h2 class="text-center mb-5 fw-bold text-uppercase border-bottom d-inline-block pb-2">Thực Đơn Hôm Nay</h2>
+        <div class="row g-4" id="product-list">
+            </div>
+    </div>
+
+    <a href="/giohang.html" class="floating-cart">
+        <i class="fas fa-shopping-cart"></i> <span id="cart-count" class="badge bg-white text-danger rounded-circle">0</span>
+    </a>
+
+    <footer class="bg-dark text-white text-center py-4">
+        <p>&copy; 2025 Nhà Hàng Node.js - Thiết kế bởi Bạn</p>
+    </footer>
+
+    <script>
+        // Load món ăn
+        fetch('/api/products')
+            .then(r => r.json())
+            .then(data => {
+                const list = document.getElementById('product-list');
+                data.forEach(p => {
+                    list.innerHTML += `
+                        <div class="col-md-3 col-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <img src="${p.hinh_anh}" class="card-img-top" alt="${p.ten_mon}">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title fw-bold">${p.ten_mon}</h5>
+                                    <p class="text-danger fs-5 fw-bold">${Number(p.gia).toLocaleString()} đ</p>
+                                    <button onclick="addToCart(${p.id}, '${p.ten_mon}', ${p.gia}, '${p.hinh_anh}')" class="btn btn-danger w-100 rounded-pill">
+                                        <i class="fas fa-plus"></i> Đặt món
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+
+        // Giữ nguyên logic giỏ hàng cũ (cập nhật số lượng)
+        function updateCount() {
+            let gh = JSON.parse(localStorage.getItem('giohang')) || [];
+            let total = gh.reduce((s, i) => s + i.sl, 0);
+            document.getElementById('cart-count').innerText = total;
+        }
+        function addToCart(id, ten, gia, hinh) {
+            let gh = JSON.parse(localStorage.getItem('giohang')) || [];
+            let item = gh.find(i => i.id === id);
+            if(item) item.sl++; else gh.push({id, ten, gia, hinh, sl:1});
+            localStorage.setItem('giohang', JSON.stringify(gh));
+            updateCount();
+            alert('Đã thêm vào giỏ!');
+        }
+        updateCount();
+    </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Giỏ Hàng Của Bạn</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="/" class="logo">← TIẾP TỤC MUA HÀNG</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Giỏ Hàng Của Bạn</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Hình</th>
+                    <th>Tên món</th>
+                    <th>Đơn giá</th>
+                    <th>Số lượng</th>
+                    <th>Thành tiền</th>
+                    <th>Xóa</th>
+                </tr>
+            </thead>
+            <tbody id="cart-body">
+                </tbody>
+        </table>
+        
+        <div class="total-row" id="total-price" style="margin: 20px 0;">
+            Tổng cộng: 0 đ
+        </div>
+
+        <hr>
+
+        <div class="input-form" style="max-width: 500px; margin: auto;">
+            <h3 style="text-align:center">Thông Tin Giao Hàng</h3>
+            <input type="text" id="ten_khach" placeholder="Tên của bạn" required>
+            <textarea id="dia_chi" placeholder="Địa chỉ giao hàng (Số nhà, đường...)" rows="3"></textarea>
+            <button onclick="checkout()">ĐẶT HÀNG NGAY</button>
+        </div>
+    </div>
+
+    <script>
+        let gioHang = JSON.parse(localStorage.getItem('giohang')) || [];
+
+        // 1. Hiển thị giỏ hàng ra bảng
+        function renderCart() {
+            const tbody = document.getElementById('cart-body');
+            tbody.innerHTML = '';
+            let tongTien = 0;
+
+            if (gioHang.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Giỏ hàng trống trơn!</td></tr>';
+                document.getElementById('total-price').innerText = "Tổng cộng: 0 đ";
+                return;
+            }
+
+            gioHang.forEach((item, index) => {
+                let thanhTien = item.gia * item.sl;
+                tongTien += thanhTien;
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td><img src="${item.hinh}" width="50" style="border-radius:4px"></td>
+                        <td>${item.ten}</td>
+                        <td>${parseInt(item.gia).toLocaleString()}</td>
+                        <td>
+                            <button onclick="changeQty(${index}, -1)" style="width:30px; padding:2px">-</button>
+                            ${item.sl}
+                            <button onclick="changeQty(${index}, 1)" style="width:30px; padding:2px">+</button>
+                        </td>
+                        <td>${thanhTien.toLocaleString()} đ</td>
+                        <td><a href="#" onclick="removeItem(${index})" style="color:red">Xóa</a></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('total-price').innerText = `Tổng cộng: ${tongTien.toLocaleString()} đ`;
+        }
+
+        // 2. Tăng giảm số lượng
+        function changeQty(index, delta) {
+            gioHang[index].sl += delta;
+            if (gioHang[index].sl < 1) gioHang[index].sl = 1;
+            localStorage.setItem('giohang', JSON.stringify(gioHang));
+            renderCart();
+        }
+
+        // 3. Xóa món
+        function removeItem(index) {
+            if(confirm('Bạn muốn bỏ món này?')){
+                gioHang.splice(index, 1);
+                localStorage.setItem('giohang', JSON.stringify(gioHang));
+                renderCart();
+            }
+        }
+
+        // 4. CHỐT ĐƠN (Gửi về Server Node.js)
+        async function checkout() {
+            if (gioHang.length === 0) return alert('Giỏ hàng trống!');
+            const ten = document.getElementById('ten_khach').value;
+            const diachi = document.getElementById('dia_chi').value;
+
+            if (!ten || !diachi) return alert('Vui lòng nhập tên và địa chỉ!');
+
+            // Tính tổng tiền
+            const tongTien = gioHang.reduce((sum, item) => sum + (item.gia * item.sl), 0);
+            
+            // Tạo nội dung đơn hàng dạng chữ
+            const noiDung = gioHang.map(item => `${item.ten} (x${item.sl})`).join(', ') + ` - ĐC: ${diachi}`;
+
+            // Gửi API
+            try {
+                const res = await fetch('http://localhost:3000/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ten_khach: ten,
+                        tong_tien: tongTien,
+                        noi_dung: noiDung
+                    })
+                });
+                const data = await res.json();
+                
+                alert("🎉 Đặt hàng thành công! Chủ quán đã nhận đơn.");
+                localStorage.removeItem('giohang'); // Xóa giỏ
+                window.location.href = '/'; // Về trang chủ
+            } catch (err) {
+                alert("Lỗi khi gửi đơn hàng!");
+                console.error(err);
+            }
+        }
+
+        // Chạy hàm hiển thị khi vào trang
+        renderCart();
+    </script>
+</body>
+</html>

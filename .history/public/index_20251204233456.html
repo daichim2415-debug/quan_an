@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Chủ - Food Pro</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary: #ff4757;
+            --dark: #2f3542;
+            --light: #f1f2f6;
+            --shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        body { font-family: 'Poppins', sans-serif; background: var(--light); color: var(--dark); overflow-x: hidden; }
+
+        /* NAVBAR */
+        .navbar { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 15px 0; }
+        .navbar-brand { font-weight: 800; color: var(--primary) !important; letter-spacing: 1px; }
+
+        /* CARD SẢN PHẨM */
+        .card-product {
+            border: none; border-radius: 20px; background: white;
+            box-shadow: var(--shadow); transition: 0.4s;
+            overflow: hidden; opacity: 0; transform: translateY(30px); /* Ẩn để làm hiệu ứng hiện ra */
+            animation: fadeUp 0.6s forwards; /* Chạy animation */
+            position: relative;
+        }
+
+        .card-product:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(255, 71, 87, 0.2); }
+        .card-product img { height: 220px; width: 100%; object-fit: cover; transition: 0.5s; }
+        .card-product:hover img { transform: scale(1.1); }
+        .card-body { padding: 20px; text-align: center; }
+        .price { color: var(--primary); font-weight: 700; font-size: 1.2rem; display: block; margin: 10px 0; }
+
+        /* BUTTON */
+        .btn-add {
+            background: linear-gradient(45deg, #ff4757, #ff6b81); border: none;
+            border-radius: 50px; padding: 10px 25px; font-weight: 600; color: white;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3); width: 100%;
+        }
+        .btn-add:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255, 71, 87, 0.5); color: white; }
+
+        /* HIỆU ỨNG LOADING */
+        #loading-spinner {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 10px;
+        }
+
+        /* HIỆU ỨNG HÌNH BAY (Flying Image) */
+        .flying-img {
+            position: fixed; z-index: 9999; border-radius: 50%;
+            width: 50px; height: 50px; object-fit: cover;
+            transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1); pointer-events: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* KEYFRAMES ANIMATION */
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        
+        /* Hiệu ứng rung giỏ hàng khi nhận món */
+        @keyframes shake {
+            0% { transform: rotate(0deg); } 25% { transform: rotate(-15deg); }
+            50% { transform: rotate(15deg); } 75% { transform: rotate(-15deg); } 100% { transform: rotate(0deg); }
+        }
+        .shake-cart { animation: shake 0.4s; color: var(--primary) !important; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-spinner">
+        <div class="spinner"></div>
+        <p class="fw-bold text-muted">Đang dọn món ngon...</p>
+    </div>
+
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-utensils"></i> FOOD PRO</a>
+            <div class="d-flex align-items-center gap-3">
+                
+                <a href="/cart.html" class="position-relative text-dark fs-4 me-3" id="cart-icon-container">
+                    <i class="fas fa-shopping-basket" id="cart-icon"></i>
+                    <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">0</span>
+                </a>
+
+                <div id="nav-user"></div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="p-5 mb-5 bg-light rounded-3 text-center position-relative overflow-hidden" style="background: url('https://source.unsplash.com/1200x400/?food,restaurant') center/cover;">
+            <div style="background: rgba(0,0,0,0.4); position: absolute; inset: 0;"></div>
+            <div class="position-relative text-white">
+                <h1 class="display-4 fw-bold">Món Ngon Mỗi Ngày</h1>
+                <p class="lead">Đặt ngay - Giao nóng hổi trong 30 phút</p>
+            </div>
+        </div>
+
+        <h3 class="fw-bold mb-4 border-start border-4 border-danger ps-3">Thực Đơn Hôm Nay</h3>
+        
+        <div class="row g-4" id="product-list">
+            </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        // --- 1. KHỞI TẠO ---
+        document.addEventListener('DOMContentLoaded', () => {
+            checkUserLogin();
+            loadProductsWithEffect(); // Tải món có hiệu ứng
+            updateCartCount();
+        });
+
+        // --- 2. TẢI MÓN ĂN TỪ API (Có hiệu ứng Loading & Fade-in) ---
+        async function loadProductsWithEffect() {
+            const listDiv = document.getElementById('product-list');
+            const loader = document.getElementById('loading-spinner');
+            
+            // Giả lập độ trễ 0.8 giây để ngắm hiệu ứng loading
+            setTimeout(async () => {
+                try {
+                    const res = await fetch('/api/products');
+                    const data = await res.json();
+                    listDiv.innerHTML = '';
+                    
+                    if(data.length === 0) {
+                        listDiv.innerHTML = '<p class="text-center">Chưa có món nào.</p>';
+                        loader.style.display = 'none';
+                        return;
+                    }
+
+                    data.forEach((p, index) => {
+                        // Tính toán độ trễ animation để các món hiện ra so le nhau
+                        const delay = index * 0.1; 
+                        
+                        listDiv.innerHTML += `
+                            <div class="col-md-3 col-6">
+                                <div class="card-product h-100" style="animation-delay: ${delay}s">
+                                    <img src="${p.hinh_anh}" alt="${p.ten_mon}" id="img-${p.id}">
+                                    <div class="card-body">
+                                        <h5 class="fw-bold text-truncate">${p.ten_mon}</h5>
+                                        <span class="price">${Number(p.gia).toLocaleString()} đ</span>
+                                        
+                                        <button onclick="addToCart(this, ${p.id}, '${p.ten_mon}', ${p.gia}, '${p.hinh_anh}')" class="btn btn-add">
+                                            Thêm <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Ẩn màn hình loading
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.style.display = 'none', 300);
+
+                } catch (err) {
+                    console.error(err);
+                    loader.innerHTML = '<p class="text-danger">Lỗi kết nối Server!</p>';
+                }
+            }, 800);
+        }
+
+        // --- 3. THÊM GIỎ HÀNG VỚI HIỆU ỨNG BAY (Flying Effect) ---
+        function addToCart(btn, id, ten, gia, hinh) {
+            // A. LOGIC DATA (Lưu vào LocalStorage)
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            let item = cart.find(i => i.id === id);
+            if(item) item.sl++; else cart.push({id, ten, gia, hinh, sl:1});
+            localStorage.setItem('cart', JSON.stringify(cart));
+
+            // B. HIỆU ỨNG BAY (Visual Effect)
+            const cartIcon = document.getElementById('cart-icon-container');
+            const productImg = document.getElementById(`img-${id}`);
+
+            if (productImg && cartIcon) {
+                // 1. Tạo ảnh clone để bay
+                const flyImg = productImg.cloneNode();
+                flyImg.classList.add('flying-img');
+                
+                // 2. Lấy vị trí bắt đầu (ảnh món) và kết thúc (icon giỏ)
+                const startRect = productImg.getBoundingClientRect();
+                const endRect = cartIcon.getBoundingClientRect();
+
+                // 3. Đặt vị trí ban đầu
+                flyImg.style.top = startRect.top + 'px';
+                flyImg.style.left = startRect.left + 'px';
+                flyImg.style.width = startRect.width + 'px';
+                flyImg.style.height = startRect.height + 'px';
+                
+                document.body.appendChild(flyImg);
+
+                // 4. Kích hoạt bay sau 50ms
+                setTimeout(() => {
+                    flyImg.style.top = endRect.top + 'px';
+                    flyImg.style.left = endRect.left + 'px';
+                    flyImg.style.width = '20px'; // Thu nhỏ lại
+                    flyImg.style.height = '20px';
+                    flyImg.style.opacity = '0.5';
+                }, 50);
+
+                // 5. Khi bay xong (0.8s sau)
+                setTimeout(() => {
+                    flyImg.remove(); // Xóa ảnh clone
+                    updateCartCount(); // Cập nhật số
+                    
+                    // Rung icon giỏ hàng
+                    const icon = document.getElementById('cart-icon');
+                    icon.classList.add('shake-cart');
+                    setTimeout(() => icon.classList.remove('shake-cart'), 500);
+
+                    // Thông báo Toast nhỏ góc màn hình
+                    const Toast = Swal.mixin({
+                        toast: true, position: 'top-end', showConfirmButton: false, timer: 1500,
+                        didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
+                    });
+                    Toast.fire({ icon: 'success', title: `Đã thêm: ${ten}` });
+
+                }, 800);
+            } else {
+                // Dự phòng nếu lỗi hiệu ứng
+                updateCartCount();
+                alert("Đã thêm món!");
+            }
+        }
+
+        // --- 4. CÁC HÀM TIỆN ÍCH KHÁC ---
+        function checkUserLogin() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const navUser = document.getElementById('nav-user');
+            if(user) {
+                navUser.innerHTML = `
+                    <div class="dropdown">
+                        <button class="btn btn-outline-dark dropdown-toggle rounded-pill px-3" data-bs-toggle="dropdown">
+                            👤 ${user.name}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/profile.html">Lịch sử đơn hàng</a></li>
+                            ${user.role === 'admin' ? '<li><a class="dropdown-item" href="/admin.html">Trang Admin</a></li>' : ''}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Đăng xuất</a></li>
+                        </ul>
+                    </div>`;
+            } else {
+                navUser.innerHTML = `<a href="/login.html" class="btn btn-danger rounded-pill px-4">Đăng Nhập</a>`;
+            }
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const badge = document.getElementById('cart-count');
+            if(badge) {
+                badge.innerText = cart.reduce((s, i) => s + i.sl, 0);
+                // Hiệu ứng nảy số
+                badge.style.transform = "scale(1.5)";
+                setTimeout(() => badge.style.transform = "scale(1)", 200);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>

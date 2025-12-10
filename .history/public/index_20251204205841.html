@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang Chủ - Bán Quán</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="/" class="logo"><i class="fas fa-utensils"></i> BÁN QUÁN NGON</a>
+            <div class="nav-links">
+                <a href="/admin.html">Quản Lý</a>
+                <a href="/giohang.html" class="cart-icon">
+                    <i class="fas fa-shopping-cart"></i> Giỏ hàng
+                    <span id="cart-count" class="badge">0</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 style="text-align:center; color:#444;">THỰC ĐƠN HÔM NAY</h2>
+        <div id="menu-container" class="menu-grid">
+            </div>
+    </div>
+
+    <script>
+        // Khi web chạy: Tải món ăn & cập nhật số lượng giỏ hàng
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProducts();
+            updateCartCount();
+        });
+
+        // Hàm tải món từ Server Node.js
+        function loadProducts() {
+            fetch('http://localhost:3000/api/products')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('menu-container');
+                    container.innerHTML = '';
+                    data.forEach(mon => {
+                        // Tạo HTML cho từng món
+                        const html = `
+                            <div class="card">
+                                <img src="${mon.hinh_anh}" alt="${mon.ten_mon}">
+                                <div class="card-body">
+                                    <h3>${mon.ten_mon}</h3>
+                                    <span class="price">${parseInt(mon.gia).toLocaleString()} đ</span>
+                                    <button onclick="addToCart(${mon.id}, '${mon.ten_mon}', ${mon.gia}, '${mon.hinh_anh}')">
+                                        <i class="fas fa-plus"></i> Thêm vào giỏ
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += html;
+                    });
+                });
+        }
+
+        // Hàm thêm vào giỏ (Lưu vào LocalStorage)
+        function addToCart(id, ten, gia, hinh) {
+            let gioHang = JSON.parse(localStorage.getItem('giohang')) || [];
+            
+            // Kiểm tra món đã có chưa
+            let item = gioHang.find(sp => sp.id === id);
+            if (item) {
+                item.sl += 1; // Có rồi thì tăng số lượng
+            } else {
+                gioHang.push({ id, ten, gia, hinh, sl: 1 }); // Chưa có thì thêm mới
+            }
+
+            localStorage.setItem('giohang', JSON.stringify(gioHang));
+            updateCartCount(); // Cập nhật số trên menu
+            alert("Đã thêm món ngon này vào giỏ!");
+        }
+
+        // Cập nhật số nhỏ nhỏ trên icon giỏ hàng
+        function updateCartCount() {
+            let gioHang = JSON.parse(localStorage.getItem('giohang')) || [];
+            let total = gioHang.reduce((sum, item) => sum + item.sl, 0);
+            document.getElementById('cart-count').innerText = total;
+        }
+    </script>
+</body>
+</html>

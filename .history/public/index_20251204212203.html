@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Delivery Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        :root { --primary-color: #ff4757; --secondary-color: #2f3542; }
+        body { background: #f1f2f6; font-family: 'Segoe UI', sans-serif; padding-bottom: 80px; }
+        
+        /* Navbar & Header */
+        .navbar { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .hero-banner {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://source.unsplash.com/1600x600/?restaurant,food');
+            background-size: cover; height: 300px; color: white;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        
+        /* Categories */
+        .cat-item { cursor: pointer; transition: 0.3s; border: 2px solid transparent; }
+        .cat-item:hover, .cat-item.active { border-color: var(--primary-color); background: #ffeaa7; }
+        
+        /* Product Card */
+        .product-card { border: none; border-radius: 15px; overflow: hidden; transition: 0.3s; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .product-img { height: 180px; object-fit: cover; width: 100%; }
+        .add-btn { background: var(--primary-color); color: white; border-radius: 50px; padding: 8px 20px; border:none; }
+        
+        /* Bottom Navigation (Mobile Friendly) */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #ddd; display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
+        .nav-item { text-align: center; color: #747d8c; cursor: pointer; font-size: 12px; }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 3px; }
+        .nav-item.active { color: var(--primary-color); font-weight: bold; }
+        .cart-badge { position: absolute; top: -5px; right: -5px; background: red; color: white; font-size: 10px; padding: 2px 6px; border-radius: 50%; }
+
+        /* Views Control */
+        .view-section { display: none; padding-top: 20px; }
+        .view-section.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar fixed-top">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand fw-bold text-danger" href="#"><i class="fas fa-utensils"></i> FOOD APP PRO</a>
+            <div id="user-info" class="d-flex align-items-center gap-2">
+                <button onclick="showView('login')" class="btn btn-sm btn-outline-danger">Đăng nhập</button>
+            </div>
+        </div>
+    </nav>
+    <div style="height: 60px;"></div> <div id="view-home" class="view-section active">
+        <div class="hero-banner mb-4">
+            <h1>Hôm nay bạn muốn ăn gì?</h1>
+            <p>Giao hàng siêu tốc trong 30 phút</p>
+            <div class="bg-white p-2 rounded-pill d-flex" style="width: 80%; max-width: 500px;">
+                <input type="text" class="form-control border-0 shadow-none" placeholder="Tìm kiếm món ăn...">
+                <button class="btn btn-danger rounded-pill"><i class="fas fa-search"></i></button>
+            </div>
+        </div>
+
+        <div class="container">
+            <h5 class="fw-bold mb-3">Danh Mục</h5>
+            <div class="d-flex gap-3 overflow-auto pb-3" id="cat-list">
+                </div>
+
+            <h5 class="fw-bold mb-3 mt-3">Món Ngon Đề Xuất</h5>
+            <div class="row g-3" id="product-list">
+                </div>
+        </div>
+    </div>
+
+    <div id="view-cart" class="view-section container">
+        <h3 class="fw-bold border-bottom pb-2">Giỏ Hàng Của Bạn</h3>
+        <div id="cart-items" class="mt-3">
+            </div>
+        
+        <div class="card mt-4 p-3 bg-light">
+            <h5>Thông tin giao hàng</h5>
+            <input type="text" id="order-name" class="form-control mb-2" placeholder="Người nhận">
+            <input type="text" id="order-phone" class="form-control mb-2" placeholder="Số điện thoại">
+            <textarea id="order-address" class="form-control mb-2" placeholder="Địa chỉ chi tiết"></textarea>
+            <div class="d-flex justify-content-between mt-3">
+                <h4>Tổng: <span id="cart-total" class="text-danger">0 đ</span></h4>
+                <button onclick="checkout()" class="btn btn-danger btn-lg">ĐẶT HÀNG NGAY</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-history" class="view-section container">
+        <h3 class="fw-bold">Lịch Sử Đơn Hàng</h3>
+        <div id="history-list" class="mt-3">
+            </div>
+    </div>
+
+    <div id="view-login" class="view-section container d-flex justify-content-center">
+        <div class="card p-4 shadow" style="width: 100%; max-width: 400px;">
+            <ul class="nav nav-tabs mb-3" id="authTabs">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-login">Đăng Nhập</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-register">Đăng Ký</a></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="tab-login">
+                    <input type="text" id="l-user" class="form-control mb-2" placeholder="Tên đăng nhập">
+                    <input type="password" id="l-pass" class="form-control mb-2" placeholder="Mật khẩu">
+                    <button onclick="doLogin()" class="btn btn-danger w-100">ĐĂNG NHẬP</button>
+                </div>
+                <div class="tab-pane fade" id="tab-register">
+                    <input type="text" id="r-name" class="form-control mb-2" placeholder="Họ và tên">
+                    <input type="text" id="r-user" class="form-control mb-2" placeholder="Tên đăng nhập">
+                    <input type="password" id="r-pass" class="form-control mb-2" placeholder="Mật khẩu">
+                    <input type="text" id="r-phone" class="form-control mb-2" placeholder="Số điện thoại">
+                    <textarea id="r-addr" class="form-control mb-2" placeholder="Địa chỉ mặc định"></textarea>
+                    <button onclick="doRegister()" class="btn btn-success w-100">ĐĂNG KÝ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav shadow-lg">
+        <div class="nav-item active" onclick="showView('home')">
+            <i class="fas fa-home"></i> Trang chủ
+        </div>
+        <div class="nav-item position-relative" onclick="showView('cart')">
+            <i class="fas fa-shopping-bag"></i> Giỏ hàng
+            <span id="badge-count" class="cart-badge">0</span>
+        </div>
+        <div class="nav-item" onclick="showView('history')">
+            <i class="fas fa-file-invoice"></i> Đơn hàng
+        </div>
+        <div class="nav-item" onclick="checkUserAccount()">
+            <i class="fas fa-user"></i> Tài khoản
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // STATE MANAGEMENT
+        let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        // KHỞI CHẠY
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+            loadProducts();
+            updateUI();
+        });
+
+        // 1. CHUYỂN VIEW (SPA)
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+            
+            // Highlight icon bottom bar
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            // (Logic highlight đơn giản hóa)
+            
+            if(viewId === 'cart') renderCart();
+            if(viewId === 'history') loadHistory();
+        }
+
+        // 2. UI UPDATE
+        function updateUI() {
+            const uInfo = document.getElementById('user-info');
+            const badge = document.getElementById('badge-count');
+            
+            badge.innerText = cart.reduce((total, item) => total + item.sl, 0);
+
+            if(currentUser) {
+                uInfo.innerHTML = `
+                    <span class="fw-bold me-2">Chào, ${currentUser.name}</span>
+                    <button onclick="logout()" class="btn btn-sm btn-outline-dark"><i class="fas fa-sign-out-alt"></i></button>
+                `;
+            } else {
+                uInfo.innerHTML = `<button onclick="showView('login')" class="btn btn-sm btn-danger">Đăng nhập</button>`;
+            }
+        }
+
+        // 3. LOAD DATA
+        async function loadCategories() {
+            const res = await fetch('/api/categories');
+            const cats = await res.json();
+            const list = document.getElementById('cat-list');
+            list.innerHTML = `<div class="cat-item active badge rounded-pill bg-danger p-3" onclick="loadProducts()">Tất cả</div>`;
+            cats.forEach(c => {
+                list.innerHTML += `<div class="cat-item badge rounded-pill bg-white text-dark p-3 border" onclick="loadProducts(${c.id})">${c.name}</div>`;
+            });
+        }
+
+        async function loadProducts(catId = null) {
+            let url = '/api/products' + (catId ? `?cat_id=${catId}` : '');
+            const res = await fetch(url);
+            const prods = await res.json();
+            const list = document.getElementById('product-list');
+            list.innerHTML = '';
+            
+            prods.forEach(p => {
+                list.innerHTML += `
+                    <div class="col-6 col-md-3">
+                        <div class="product-card h-100">
+                            <img src="${p.image}" class="product-img">
+                            <div class="p-3">
+                                <h6 class="fw-bold text-truncate">${p.name}</h6>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span class="text-danger fw-bold">${Number(p.price).toLocaleString()}đ</span>
+                                    <button class="add-btn" onclick="addToCart(${p.id}, '${p.name}', ${p.price}, '${p.image}')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 4. CART LOGIC
+        function addToCart(id, name, price, img) {
+            let item = cart.find(i => i.id === id);
+            if(item) item.sl++; else cart.push({id, name, price, img, sl:1});
+            saveCart();
+            Swal.fire({ icon: 'success', title: 'Đã thêm món!', timer: 1000, showConfirmButton: false, position: 'top-end', toast: true });
+        }
+
+        function saveCart() {
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateUI();
+        }
+
+        function renderCart() {
+            const div = document.getElementById('cart-items');
+            div.innerHTML = '';
+            let total = 0;
+            
+            if(cart.length === 0) return div.innerHTML = '<div class="text-center p-5"><i class="fas fa-shopping-basket fa-3x text-muted"></i><p>Giỏ trống trơn!</p></div>';
+
+            cart.forEach((item, idx) => {
+                total += item.price * item.sl;
+                div.innerHTML += `
+                    <div class="d-flex align-items-center bg-white p-2 mb-2 rounded shadow-sm">
+                        <img src="${item.img}" width="60" height="60" class="rounded object-fit-cover">
+                        <div class="ms-3 flex-grow-1">
+                            <h6 class="m-0">${item.name}</h6>
+                            <small class="text-muted">${Number(item.price).toLocaleString()}đ</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <button onclick="updateQty(${idx}, -1)" class="btn btn-sm btn-light">-</button>
+                            <span class="mx-2 fw-bold">${item.sl}</span>
+                            <button onclick="updateQty(${idx}, 1)" class="btn btn-sm btn-light">+</button>
+                        </div>
+                        <button onclick="updateQty(${idx}, -100)" class="btn text-danger ms-2"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+            document.getElementById('cart-total').innerText = total.toLocaleString() + ' đ';
+            
+            // Auto fill info if user logged in
+            if(currentUser) {
+                document.getElementById('order-name').value = currentUser.name;
+                document.getElementById('order-phone').value = currentUser.phone;
+                document.getElementById('order-address').value = currentUser.address;
+            }
+        }
+
+        function updateQty(idx, delta) {
+            cart[idx].sl += delta;
+            if(cart[idx].sl <= 0) cart.splice(idx, 1);
+            saveCart(); renderCart();
+        }
+
+        async function checkout() {
+            if(!currentUser) return Swal.fire('Yêu cầu', 'Vui lòng đăng nhập để đặt hàng!', 'warning');
+            if(cart.length === 0) return Swal.fire('Lỗi', 'Giỏ hàng trống!', 'error');
+
+            const name = document.getElementById('order-name').value;
+            const phone = document.getElementById('order-phone').value;
+            const addr = document.getElementById('order-address').value;
+            const total = cart.reduce((t, i) => t + i.price * i.sl, 0);
+
+            if(!name || !phone || !addr) return Swal.fire('Thiếu thông tin', 'Vui lòng điền đủ thông tin nhận hàng', 'warning');
+
+            const res = await fetch('/api/orders', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    customer_name: name, phone, address: addr,
+                    total_money: total, items: cart
+                })
+            });
+            const data = await res.json();
+            if(data.success) {
+                cart = []; saveCart();
+                Swal.fire('Thành công', 'Đơn hàng đã được gửi đi! Bếp đang làm món.', 'success');
+                showView('history');
+            } else {
+                Swal.fire('Lỗi', 'Không thể gửi đơn', 'error');
+            }
+        }
+
+        // 5. USER & HISTORY LOGIC
+        async function doLogin() {
+            const u = document.getElementById('l-user').value;
+            const p = document.getElementById('l-pass').value;
+            const res = await fetch('/api/login', {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({username: u, password: p})
+            });
+            const data = await res.json();
+            if(data.success) {
+                currentUser = data.user;
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                updateUI();
+                showView('home');
+                Swal.fire('Chào mừng', `Xin chào ${currentUser.name}`, 'success');
+            } else {
+                Swal.fire('Thất bại', data.message, 'error');
+            }
+        }
+        
+        async function doRegister() {
+            // Logic đăng ký (Gọi API /api/register tương tự login)
+            const body = {
+                full_name: document.getElementById('r-name').value,
+                username: document.getElementById('r-user').value,
+                password: document.getElementById('r-pass').value,
+                phone: document.getElementById('r-phone').value,
+                address: document.getElementById('r-addr').value
+            };
+            const res = await fetch('/api/register', {
+                method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if(data.success) { Swal.fire('OK', data.message, 'success'); }
+            else { Swal.fire('Lỗi', data.message, 'error'); }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('user');
+            updateUI(); showView('login');
+        }
+
+        function checkUserAccount() {
+            if(currentUser) showView('history'); // Nếu đã login thì xem lịch sử
+            else showView('login'); // Chưa thì hiện form login
+        }
+
+        async function loadHistory() {
+            if(!currentUser) return;
+            const res = await fetch(`/api/my-orders?user_id=${currentUser.id}`);
+            const orders = await res.json();
+            const div = document.getElementById('history-list');
+            div.innerHTML = '';
+            
+            const statusMap = {
+                'cho_duyet': '<span class="badge bg-warning">Chờ duyệt</span>',
+                'dang_lam': '<span class="badge bg-info">Bếp đang làm</span>',
+                'dang_giao': '<span class="badge bg-primary">Shipper đang giao</span>',
+                'hoan_thanh': '<span class="badge bg-success">Hoàn thành</span>',
+                'da_huy': '<span class="badge bg-secondary">Đã hủy</span>'
+            };
+
+            orders.forEach(o => {
+                const items = JSON.parse(o.items_json);
+                const itemStr = items.map(i => `${i.name} (x${i.sl})`).join(', ');
+                div.innerHTML += `
+                    <div class="card p-3 mb-3 shadow-sm border-0">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold">#DH${o.id}</span>
+                            ${statusMap[o.status] || o.status}
+                        </div>
+                        <p class="mb-1 text-muted small">${new Date(o.created_at).toLocaleString()}</p>
+                        <p class="mb-2 fw-bold text-dark">${itemStr}</p>
+                        <div class="d-flex justify-content-between border-top pt-2">
+                            <span>Tổng tiền:</span>
+                            <span class="text-danger fw-bold">${Number(o.total_money).toLocaleString()} đ</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>

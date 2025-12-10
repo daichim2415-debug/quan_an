@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Lịch Sử Đơn Hàng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar mb-4 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/">← Quay lại trang chủ</a>
+            <span class="fw-bold">Lịch sử mua hàng</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white fw-bold">Danh sách đơn hàng của bạn</div>
+                    <div class="card-body">
+                        <div id="history-list">
+                            <p class="text-center text-muted">Đang tải dữ liệu...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadHistory);
+
+        async function loadHistory() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if(!user) {
+                alert("Vui lòng đăng nhập!");
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const res = await fetch(`/api/my-orders?user_id=${user.id}`);
+            const data = await res.json();
+            const div = document.getElementById('history-list');
+            div.innerHTML = '';
+
+            if(data.length === 0) {
+                div.innerHTML = '<p class="text-center py-3">Bạn chưa mua đơn hàng nào.</p>';
+                return;
+            }
+
+            // Map trạng thái sang tiếng Việt
+            const statusMap = {
+                'cho_duyet': '<span class="badge bg-warning text-dark">Chờ duyệt</span>',
+                'dang_lam': '<span class="badge bg-info">Đang làm món</span>',
+                'dang_giao': '<span class="badge bg-primary">Đang giao</span>',
+                'hoan_thanh': '<span class="badge bg-success">Hoàn thành</span>',
+                'da_huy': '<span class="badge bg-secondary">Đã hủy</span>'
+            };
+
+            data.forEach(order => {
+                // Parse JSON chi tiết món ăn
+                let itemsHtml = '';
+                try {
+                    const items = JSON.parse(order.items_json);
+                    itemsHtml = items.map(i => `<div>- ${i.ten} (x${i.sl})</div>`).join('');
+                } catch(e) { itemsHtml = 'Chi tiết lỗi'; }
+
+                div.innerHTML += `
+                    <div class="border-bottom py-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold">Đơn hàng #${order.id}</span>
+                            ${statusMap[order.status] || order.status}
+                        </div>
+                        <div class="text-muted small mb-2">${new Date(order.created_at).toLocaleString()}</div>
+                        <div class="bg-light p-2 rounded mb-2 text-dark small">
+                            ${itemsHtml}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small text-muted">Giao đến: ${order.address}</span>
+                            <span class="fw-bold text-danger">${formatMoney(order.total_money)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>

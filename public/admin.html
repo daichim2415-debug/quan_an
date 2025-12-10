@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Món ăn - Food Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* === CSS CƠ BẢN === */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; background-color: #f1f2f6; height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 250px; background-color: #2f3542; color: white; display: flex; flex-direction: column; padding: 20px; }
+        .sidebar h2 { font-size: 24px; text-align: center; margin-bottom: 40px; color: #ff6b6b; border-bottom: 1px solid #57606f; padding-bottom: 20px; }
+        .menu-item { padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; color: #ced6e0; text-decoration: none; display: flex; align-items: center; gap: 15px; transition: 0.3s; }
+        .menu-item:hover, .menu-item.active { background-color: #ff6b6b; color: white; }
+
+        /* Main Content */
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        .btn-add { background: #ff6b6b; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-add:hover { background: #ff4757; }
+
+        /* Table */
+        .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
+        th { background-color: #f8f9fa; color: #555; }
+        
+        .food-img { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; }
+        
+        /* Action Buttons */
+        .btn-edit { color: #3498db; background: none; border: none; cursor: pointer; font-size: 18px; margin-right: 10px; }
+        .btn-delete { color: #e74c3c; background: none; border: none; cursor: pointer; font-size: 18px; }
+
+        /* === MODAL (KHUNG NHẬP LIỆU) === */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 450px; position: relative; animation: slideDown 0.3s; max-height: 90vh; overflow-y: auto; }
+        .modal h3 { margin-bottom: 20px; color: #333; text-align: center; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+        .form-group input[type="text"], 
+        .form-group input[type="number"], 
+        .form-group textarea,
+        .form-group input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
+        
+        /* Ảnh xem trước */
+        #preview-img { width: 100%; height: 150px; object-fit: cover; margin-top: 10px; border-radius: 5px; display: none; border: 1px dashed #ddd; }
+
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn-save { background: #2ecc71; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-cancel { background: #95a5a6; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>FOOD ADMIN</h2>
+        <a href="admin.html" class="menu-item active"><i class="fas fa-utensils"></i> Quản lý Món ăn</a>
+        <a href="orders.html" class="menu-item"><i class="fas fa-file-invoice-dollar"></i> Đơn hàng</a>
+        <a href="customers.html" class="menu-item"><i class="fas fa-users"></i> Khách hàng</a>
+        <a href="trang_chu.html" class="menu-item" style="margin-top: auto; background: #ff4757;"><i class="fas fa-sign-out-alt"></i> Về trang khách</a>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2 style="color: #333;">Danh sách Món ăn</h2>
+            <button class="btn-add" onclick="openModal()"><i class="fas fa-plus"></i> Thêm món mới</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Hình ảnh</th>
+                        <th>Tên món</th>
+                        <th>Giá tiền</th>
+                        <th>Mô tả</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody id="product-table">
+                    <!-- Dữ liệu sẽ đổ vào đây -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL THÊM/SỬA MÓN -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Thêm món mới</h3>
+            <input type="hidden" id="food-id"> 
+            <!-- Input ẩn để lưu đường dẫn ảnh cũ khi sửa -->
+            <input type="hidden" id="food-img-old">
+
+            <div class="form-group">
+                <label>Tên món ăn</label>
+                <input type="text" id="food-name" placeholder="Ví dụ: Phở bò">
+            </div>
+            <div class="form-group">
+                <label>Giá tiền (VNĐ)</label>
+                <input type="number" id="food-price" placeholder="Ví dụ: 35000">
+            </div>
+            
+            <!-- Phần chọn ảnh File -->
+            <div class="form-group">
+                <label>Hình ảnh món ăn</label>
+                <input type="file" id="food-img-file" accept="image/*">
+                <img id="preview-img" src="#" alt="Ảnh xem trước">
+            </div>
+
+            <div class="form-group">
+                <label>Mô tả ngắn</label>
+                <textarea id="food-desc" rows="3" placeholder="Mô tả món ăn..."></textarea>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Hủy</button>
+                <button class="btn-save" onclick="saveProduct()">Lưu lại</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Định dạng tiền
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        // 2. Tải danh sách món
+        async function loadProducts() {
+            try {
+                const res = await fetch('/api/mon-an');
+                const products = await res.json();
+                
+                const tbody = document.getElementById('product-table');
+                tbody.innerHTML = '';
+
+                products.forEach(p => {
+                    // Nếu ko có ảnh thì dùng ảnh mặc định
+                    const imgUrl = p.hinh_anh ? p.hinh_anh : 'https://via.placeholder.com/50';
+                    
+                    // Chuyển object thành chuỗi an toàn
+                    const productStr = JSON.stringify(p).replace(/"/g, "&quot;");
+
+                    const row = `
+                        <tr>
+                            <td>#${p.id}</td>
+                            <td><img src="${imgUrl}" class="food-img" onerror="this.src='https://via.placeholder.com/50'"></td>
+                            <td style="font-weight:bold">${p.ten_mon}</td>
+                            <td style="color:#e74c3c; font-weight:bold">${formatMoney(p.gia)}</td>
+                            <td style="color:#7f8c8d; font-size:13px; max-width:200px;">${p.mo_ta || ''}</td>
+                            <td>
+                                <button class="btn-edit" onclick="editProduct(${productStr})"><i class="fas fa-edit"></i></button>
+                                <button class="btn-delete" onclick="deleteProduct(${p.id})"><i class="fas fa-trash-alt"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // 3. Xử lý xem trước ảnh khi chọn file
+        document.getElementById('food-img-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview-img').src = e.target.result;
+                    document.getElementById('preview-img').style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 4. Mở Modal Thêm mới
+        const modal = document.getElementById('productModal');
+        
+        function openModal() {
+            document.getElementById('modal-title').innerText = "Thêm món mới";
+            document.getElementById('food-id').value = ''; 
+            document.getElementById('food-name').value = '';
+            document.getElementById('food-price').value = '';
+            document.getElementById('food-desc').value = '';
+            
+            // Reset ảnh
+            document.getElementById('food-img-file').value = '';
+            document.getElementById('food-img-old').value = '';
+            document.getElementById('preview-img').style.display = 'none';
+            document.getElementById('preview-img').src = '';
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        // 5. Mở Modal Sửa món
+        function editProduct(product) {
+            document.getElementById('modal-title').innerText = "Sửa món ăn";
+            
+            document.getElementById('food-id').value = product.id;
+            document.getElementById('food-name').value = product.ten_mon;
+            document.getElementById('food-price').value = product.gia;
+            document.getElementById('food-desc').value = product.mo_ta;
+            
+            // Xử lý ảnh cũ
+            document.getElementById('food-img-old').value = product.hinh_anh; // Lưu lại đường dẫn cũ
+            document.getElementById('food-img-file').value = ''; // Reset ô chọn file mới
+            
+            if(product.hinh_anh) {
+                document.getElementById('preview-img').src = product.hinh_anh;
+                document.getElementById('preview-img').style.display = 'block';
+            } else {
+                document.getElementById('preview-img').style.display = 'none';
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        // 6. LƯU (Quan trọng: Dùng FormData để gửi file)
+        async function saveProduct() {
+            const id = document.getElementById('food-id').value;
+            const fileInput = document.getElementById('food-img-file');
+            
+            // Tạo FormData thay vì JSON
+            const formData = new FormData();
+            formData.append('ten_mon', document.getElementById('food-name').value);
+            formData.append('gia', document.getElementById('food-price').value);
+            formData.append('mo_ta', document.getElementById('food-desc').value);
+            formData.append('hinh_anh_cu', document.getElementById('food-img-old').value); // Gửi đường dẫn cũ để server biết nếu ko chọn ảnh mới
+
+            // Nếu người dùng chọn file mới thì mới gửi lên
+            if (fileInput.files.length > 0) {
+                formData.append('hinh_anh', fileInput.files[0]);
+            }
+
+            if(!document.getElementById('food-name').value || !document.getElementById('food-price').value) {
+                alert("Vui lòng nhập tên và giá món!"); return;
+            }
+
+            try {
+                let url, method;
+                if(id) {
+                    url = '/api/mon-an/' + id;
+                    method = 'PUT';
+                } else {
+                    url = '/api/mon-an';
+                    method = 'POST';
+                }
+
+                const res = await fetch(url, {
+                    method: method,
+                    body: formData // Gửi FormData (Không cần set Content-Type, trình duyệt tự lo)
+                });
+
+                if(res.ok) {
+                    alert("✅ Lưu thành công!");
+                    closeModal();
+                    loadProducts();
+                } else {
+                    alert("❌ Lỗi khi lưu! Kiểm tra server console.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Lỗi kết nối server!");
+            }
+        }
+
+        // 7. Xóa món
+        async function deleteProduct(id) {
+            if(confirm("Bạn có chắc chắn muốn xóa món này không?")) {
+                try {
+                    await fetch('/api/mon-an/' + id, { method: 'DELETE' });
+                    loadProducts();
+                } catch (error) {
+                    alert("Lỗi khi xóa!");
+                }
+            }
+        }
+
+        // Chạy lần đầu
+        loadProducts();
+    </script>
+</body>
+</html>
