@@ -5,6 +5,9 @@ const cors = require('cors');
 const multer = require('multer'); // Khai báo 1 lần duy nhất ở đây
 
 const app = express();
+app.get("/", (req, res) => {
+  res.send("✅ Quan an app is running!");
+});
 const port = 3000;
 
 // --- CẤU HÌNH CHUNG ---
